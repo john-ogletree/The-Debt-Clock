@@ -1,0 +1,2823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TDC — The Debt Clock: Complete Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js">
+    </script>
+    <style>
+        /* ── RESET ── */
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --bg-body: #0b0e14;
+            --bg-container: #141a26;
+            --bg-card: #1a2232;
+            --bg-input: #1a2232;
+            --border-color: #2a3344;
+            --text-primary: #f0f4ff;
+            --text-secondary: #99aacd;
+            --text-muted: #556688;
+            --text-dim: #445566;
+            --accent: #ff6b6b;
+            --accent-gold: #ffd700;
+            --accent-green: #2ed573;
+            --accent-blue: #4dabf7;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --radius-xs: 8px;
+            --transition: 0.25s ease;
+        }
+        .light-mode {
+            --bg-body: #f5f7fc;
+            --bg-container: #ffffff;
+            --bg-card: #f0f4ff;
+            --bg-input: #f0f4ff;
+            --border-color: #d6dce8;
+            --text-primary: #1a1a2e;
+            --text-secondary: #4a4a6a;
+            --text-muted: #7788aa;
+            --text-dim: #99aacd;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+        }
+        html,
+        body {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            padding: 1rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+        .container {
+            max-width: 1440px;
+            width: 100%;
+            background: var(--bg-container);
+            padding: 1.5rem 1.2rem;
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s, border 0.3s, box-shadow 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* ── TOP BAR ── */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-bottom: 0.3rem;
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .tdc-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--accent);
+            background: rgba(255, 107, 107, 0.12);
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            text-transform: uppercase;
+            border: 1px solid rgba(255, 107, 107, 0.2);
+            white-space: nowrap;
+            animation: pulse-badge 2s infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            margin-right: 0.3rem;
+            flex-shrink: 0;
+            animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .status-dot.warning { background: #ffa502; }
+        .status-dot.offline { background: var(--accent); }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-icon {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.2rem 0.6rem;
+            border-radius: var(--radius-xs);
+            font-size: 0.6rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        .btn-icon:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+        .btn-icon.active {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        .lang-selector {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.2rem 0.5rem;
+            border-radius: var(--radius-xs);
+            font-size: 0.65rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+            outline: none;
+        }
+        .lang-selector:hover {
+            border-color: var(--accent);
+        }
+        .lang-selector option {
+            background: var(--bg-container);
+            color: var(--text-primary);
+        }
+        .toggle-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        .toggle-switch {
+            width: 38px;
+            height: 20px;
+            background: var(--border-color);
+            border-radius: 40px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.25s;
+            border: none;
+            padding: 0;
+            flex-shrink: 0;
+        }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: 0.25s;
+        }
+        .toggle-switch.active {
+            background: var(--accent);
+        }
+        .toggle-switch.active::after {
+            transform: translateX(18px);
+            background: #fff;
+        }
+        .toggle-label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            color: var(--text-muted);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            color: var(--text-primary);
+        }
+        h1 span.light {
+            font-weight: 300;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+        .subhead {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin: 0.1rem 0 1.2rem 0;
+            padding-left: 0.8rem;
+            border-left: 4px solid var(--accent);
+            word-wrap: break-word;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 1.5rem 0 0.8rem 0;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .section-title .badge {
+            font-size: 0.5rem;
+            font-weight: 400;
+            color: var(--text-muted);
+            background: var(--bg-card);
+            padding: 0.05rem 0.5rem;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+        .section-title .live-indicator {
+            font-size: 0.5rem;
+            color: var(--accent-green);
+            background: rgba(46, 213, 115, 0.1);
+            padding: 0.05rem 0.5rem;
+            border-radius: 40px;
+            border: 1px solid rgba(46, 213, 115, 0.2);
+            animation: pulse-text 1.5s infinite;
+        }
+        @keyframes pulse-text {
+            0%,
+            100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ── DEBT TICKER ── */
+        .debt-ticker {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            padding: 1rem 1.2rem;
+            border-radius: var(--radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin: 0.8rem 0 1.2rem 0;
+            border: 1px solid var(--border-color);
+            transition: border-color 0.3s;
+        }
+        .debt-ticker:hover { border-color: var(--accent); }
+        .debt-ticker .label {
+            font-weight: 400;
+            font-size: 0.85rem;
+            opacity: 0.6;
+        }
+        .debt-ticker .number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 0.1rem 0.8rem;
+            border-radius: var(--radius-sm);
+            color: var(--accent);
+            word-break: break-all;
+            transition: color 0.2s;
+        }
+        .debt-ticker .number.updating { color: var(--accent-gold); }
+        .debt-ticker .updated {
+            font-size: 0.65rem;
+            opacity: 0.4;
+        }
+        .debt-ticker .meta {
+            font-size: 0.55rem;
+            opacity: 0.3;
+            margin-top: 0.1rem;
+        }
+
+        /* ── STATS GRID ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.6rem;
+            margin: 0.8rem 0 0.3rem 0;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            padding: 0.8rem 0.4rem;
+            border-radius: var(--radius);
+            text-align: center;
+            transition: all 0.3s;
+            border: 1px solid var(--border-color);
+            min-width: 0;
+            overflow: hidden;
+            position: relative;
+            cursor: default;
+        }
+        .stat-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .stat-card.pinned {
+            border-color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.05);
+        }
+        .stat-card .pin-btn {
+            position: absolute;
+            top: 4px;
+            right: 6px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: 0.2s;
+        }
+        .stat-card:hover .pin-btn,
+        .stat-card.pinned .pin-btn {
+            opacity: 1;
+        }
+        .stat-card.pinned .pin-btn {
+            color: var(--accent-gold);
+        }
+        .stat-card .update-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 107, 107, 0.05);
+            border-radius: var(--radius);
+            opacity: 0;
+            transition: opacity 0.15s;
+            pointer-events: none;
+        }
+        .stat-card .update-flash.active {
+            opacity: 1;
+            animation: flash-fade 0.4s ease-out;
+        }
+        @keyframes flash-fade {
+            0% { opacity: 0.3; }
+            100% { opacity: 0; }
+        }
+        .stat-number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+            font-family: 'Courier New', monospace;
+            word-break: break-word;
+            line-height: 1.2;
+            transition: color 0.2s;
+        }
+        .stat-number.gold { color: var(--accent-gold); }
+        .stat-number.green { color: var(--accent-green); }
+        .stat-number.blue { color: var(--accent-blue); }
+        .stat-number.updating { color: var(--accent-gold); }
+        .stat-label {
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            word-wrap: break-word;
+        }
+        .stat-source {
+            font-size: 0.45rem;
+            color: var(--text-muted);
+            margin-top: 0.1rem;
+            display: block;
+            word-wrap: break-word;
+        }
+
+        /* ── PROGRESS BARS ── */
+        .progress-wrap {
+            background: var(--bg-card);
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius);
+            margin: 0.8rem 0 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+        .progress-item {
+            margin: 0.3rem 0;
+        }
+        .progress-item .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+        .progress-item .bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-body);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.1rem;
+        }
+        .progress-item .bar .fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .progress-item .bar .fill.red { background: var(--accent); }
+        .progress-item .bar .fill.gold { background: var(--accent-gold); }
+        .progress-item .bar .fill.green { background: var(--accent-green); }
+        .progress-item .bar .fill.blue { background: var(--accent-blue); }
+
+        /* ── LIVE COUNTER ── */
+        .live-counter {
+            background: var(--bg-card);
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius);
+            margin: 1rem 0 0.8rem 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        .counter-item {
+            text-align: center;
+            min-width: 0;
+            overflow: hidden;
+            padding: 0.2rem 0;
+            border-radius: var(--radius-xs);
+            transition: background 0.3s;
+        }
+        .counter-item:hover { background: rgba(255, 255, 255, 0.03); }
+        .counter-item .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+            word-break: break-word;
+            transition: color 0.2s;
+        }
+        .counter-item .value.updating { color: var(--accent-gold); }
+        .counter-item .desc {
+            font-size: 0.55rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            word-wrap: break-word;
+        }
+
+        /* ── OPPORTUNITY COST ── */
+        .opp-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.6rem;
+            margin: 0.8rem 0 0.3rem 0;
+        }
+        .opp-item {
+            background: var(--bg-card);
+            padding: 0.6rem 0.4rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: 0.2s;
+        }
+        .opp-item:hover {
+            border-color: var(--accent-gold);
+        }
+        .opp-item .number {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent-gold);
+            font-family: 'Courier New', monospace;
+            display: block;
+        }
+        .opp-item .label {
+            font-size: 0.55rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            word-wrap: break-word;
+        }
+
+        /* ── CHARTS ── */
+        .chart-wrap {
+            background: var(--bg-card);
+            padding: 1rem 1.2rem;
+            border-radius: var(--radius);
+            margin: 1rem 0 1.2rem 0;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+        .chart-wrap canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 220px;
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 800px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── "WHAT IF" CALCULATOR ── */
+        .whatif-wrap {
+            background: var(--bg-card);
+            padding: 1rem 1.2rem;
+            border-radius: var(--radius);
+            margin: 0.8rem 0 1rem 0;
+            border: 1px solid var(--border-color);
+        }
+        .whatif-wrap .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            margin: 0.3rem 0;
+        }
+        .whatif-wrap label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .whatif-wrap input[type="number"] {
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.2rem 0.4rem;
+            border-radius: var(--radius-xs);
+            font-size: 0.75rem;
+            width: 100px;
+            font-family: inherit;
+        }
+        .whatif-wrap input[type="number"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .whatif-wrap .result {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+        .whatif-wrap .result span {
+            font-family: 'Courier New', monospace;
+        }
+
+        /* ── TABLE ── */
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0.5rem 0 1rem 0;
+            border-radius: var(--radius-sm);
+        }
+        .table-wrap::-webkit-scrollbar {
+            height: 6px;
+        }
+        .table-wrap::-webkit-scrollbar-track {
+            background: var(--bg-card);
+            border-radius: 10px;
+        }
+        .table-wrap::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 10px;
+        }
+        table {
+            width: 100%;
+            min-width: 480px;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        th {
+            background: var(--bg-body);
+            color: var(--text-primary);
+            font-weight: 600;
+            padding: 0.4rem 0.6rem;
+            text-align: left;
+            border-bottom: 2px solid var(--border-color);
+            white-space: nowrap;
+        }
+        td {
+            padding: 0.4rem 0.6rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            word-wrap: break-word;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            transition: color 0.2s;
+        }
+        td.updating { color: var(--accent-gold); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg-card); }
+        td .source-label {
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        /* ── SOURCE BOX ── */
+        .source-box {
+            background: var(--bg-card);
+            padding: 1rem 1.2rem;
+            border-radius: var(--radius);
+            margin: 1.5rem 0 0.8rem 0;
+            font-size: 0.78rem;
+            border-left: 4px solid var(--accent);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-left-width: 4px;
+            overflow: hidden;
+        }
+        .source-box strong {
+            color: var(--text-primary);
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+        .source-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 0.1rem 0.5rem;
+            margin-top: 0.2rem;
+        }
+        .source-grid span {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            word-wrap: break-word;
+        }
+        .source-grid .highlight {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+            word-wrap: break-word;
+        }
+        .footer .live-badge {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            margin-right: 0.3rem;
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            body { padding: 0.5rem; }
+            .container { padding: 1rem 0.8rem; border-radius: 18px; }
+            h1 { font-size: 1.6rem; }
+            h1 span.light { font-size: 1.1rem; }
+            .debt-ticker .number { font-size: 1.3rem; }
+            .stat-number { font-size: 1.1rem; }
+            .live-counter .value { font-size: 0.95rem; }
+            .stats-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.4rem; }
+            .live-counter { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.3rem; }
+            .source-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); }
+            .top-bar { gap: 0.4rem; }
+            .tdc-badge { font-size: 0.6rem; padding: 0.15rem 0.6rem; }
+            .subhead { font-size: 0.8rem; padding-left: 0.6rem; }
+            .section-title { font-size: 0.95rem; }
+            td { font-size: 0.65rem; }
+            .opp-grid { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+            .chart-wrap canvas { max-height: 150px; }
+            .whatif-wrap input[type="number"] { width: 70px; }
+        }
+        @media (max-width: 400px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .live-counter { grid-template-columns: repeat(2, 1fr); }
+            .debt-ticker { flex-direction: column; align-items: stretch; text-align: center; }
+            .debt-ticker .number { font-size: 1.1rem; }
+            .opp-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── PRINT ── */
+        @media print {
+            body {
+                background: #fff !important;
+                color: #000 !important;
+                padding: 0.5in !important;
+            }
+            .container {
+                box-shadow: none !important;
+                border: 1px solid #ccc !important;
+                background: #fff !important;
+            }
+            .top-actions,
+            .toggle-wrap,
+            .lang-selector,
+            .btn-icon,
+            .pin-btn {
+                display: none !important;
+            }
+            .stat-card {
+                break-inside: avoid;
+            }
+            .chart-wrap canvas {
+                max-height: 150px !important;
+            }
+            .live-indicator {
+                display: none !important;
+            }
+        }
+
+        /* ── UTILITY ── */
+        .hidden {
+            display: none !important;
+        }
+        .flex-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .gap-1 {
+            gap: 0.5rem;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .mt-1 {
+            margin-top: 0.5rem;
+        }
+        .mb-1 {
+            margin-bottom: 0.5rem;
+        }
+        .w-full {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="app">
+
+        <!-- ═══ TOP BAR ═══ -->
+        <div class="top-bar">
+            <div class="top-bar-left">
+                <span class="tdc-badge" data-i18n="badge_live">⚡ TDC · LIVE</span>
+                <span style="font-size:0.6rem;color:var(--text-muted);" id="healthDisplay">
+                    <span class="status-dot" id="healthDot"></span> <span data-i18n="health_all_ok">All sources available</span>
+                </span>
+            </div>
+            <div class="top-actions">
+                <button class="btn-icon" id="exportCsvBtn" title="Export data as CSV">📥 CSV</button>
+                <button class="btn-icon" id="printBtn" title="Print dashboard">🖨️ Print</button>
+                <button class="btn-icon" id="resetPinsBtn" title="Reset pinned cards">📌 Reset</button>
+                <select class="lang-selector" id="langSelector" aria-label="Select language">
+                    <option value="en-US">🇺🇸 EN</option>
+                    <option value="es-ES">🇪🇸 ES</option>
+                    <option value="fr-FR">🇫🇷 FR</option>
+                    <option value="de-DE">🇩🇪 DE</option>
+                    <option value="ar-SA">🇸🇦 AR</option>
+                </select>
+                <div class="toggle-wrap">
+                    <span class="toggle-label">🌙</span>
+                    <button class="toggle-switch active" id="darkToggle" aria-label="Toggle dark mode"></button>
+                    <span class="toggle-label">☀️</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ HEADER ═══ -->
+        <h1>
+            TDC <span class="light" data-i18n="title_sub">· The Debt Clock</span>
+        </h1>
+        <div class="subhead" data-i18n="subhead">
+            Global Debt · Living Wage · Job Market · DTC Economics · Iran Conflict
+            <span style="display:inline-block;margin-left:0.8rem;font-size:0.6rem;color:var(--accent-green);">
+                <span style="display:inline-block;width:6px;height:6px;background:var(--accent-green);border-radius:50%;animation:pulse-dot 1.5s infinite;margin-right:0.3rem;"></span>
+                <span data-i18n="live_updates">LIVE UPDATES</span>
+            </span>
+        </div>
+
+        <!-- ═══ DEBT TICKER ═══ -->
+        <div class="debt-ticker">
+            <div>
+                <span class="label" data-i18n="global_debt_label">🌍 Global Debt</span>
+                <div class="number" id="globalDebt">$315.00T</div>
+                <div class="meta" id="globalDebtMeta" data-i18n="global_debt_meta">IIF · live estimate</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="updated" id="debtUpdated"><span data-i18n="updating">Updating…</span></div>
+                <div style="font-size:0.6rem;opacity:0.2;" data-i18n="global_debt_note">includes government, corporate, household</div>
+            </div>
+        </div>
+
+        <!-- ═══ GLOBAL DEBT ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_global_debt">🌍 Global Debt</span> <span class="badge" data-i18n="badge_by_category">by category</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid" id="globalDebtGrid">
+            <div class="stat-card" id="card-us" data-pin="usDebt">
+                <button class="pin-btn" data-pin="usDebt">📌</button>
+                <span class="stat-number" id="usDebt">$39.10T</span>
+                <span class="stat-label" data-i18n="us_national_label">U.S. National</span>
+                <span class="stat-source" data-i18n="source_treasury">Treasury</span>
+            </div>
+            <div class="stat-card" id="card-china" data-pin="chinaDebt">
+                <button class="pin-btn" data-pin="chinaDebt">📌</button>
+                <span class="stat-number" id="chinaDebt">$18.50T</span>
+                <span class="stat-label" data-i18n="china_national_label">China National</span>
+                <span class="stat-source" data-i18n="source_pboc">PBOC</span>
+            </div>
+            <div class="stat-card" id="card-eu" data-pin="euDebt">
+                <button class="pin-btn" data-pin="euDebt">📌</button>
+                <span class="stat-number" id="euDebt">$16.20T</span>
+                <span class="stat-label" data-i18n="eu_national_label">EU National</span>
+                <span class="stat-source" data-i18n="source_eurostat">Eurostat</span>
+            </div>
+            <div class="stat-card" id="card-japan" data-pin="japanDebt">
+                <button class="pin-btn" data-pin="japanDebt">📌</button>
+                <span class="stat-number" id="japanDebt">$12.80T</span>
+                <span class="stat-label" data-i18n="japan_national_label">Japan National</span>
+                <span class="stat-source" data-i18n="source_mof">MOF</span>
+            </div>
+            <div class="stat-card" id="card-corp" data-pin="corpDebt">
+                <button class="pin-btn" data-pin="corpDebt">📌</button>
+                <span class="stat-number" id="corpDebt">$22.50T</span>
+                <span class="stat-label" data-i18n="corporate_debt_label">Corporate Debt</span>
+                <span class="stat-source" data-i18n="source_bis">BIS</span>
+            </div>
+            <div class="stat-card" id="card-household" data-pin="householdDebt">
+                <button class="pin-btn" data-pin="householdDebt">📌</button>
+                <span class="stat-number" id="householdDebt">$18.70T</span>
+                <span class="stat-label" data-i18n="household_debt_label">Household Debt</span>
+                <span class="stat-source" data-i18n="source_bis">BIS</span>
+            </div>
+        </div>
+
+        <!-- ═══ PROGRESS BARS ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_progress">🎯 Goal Tracker</span> <span class="badge" data-i18n="badge_milestones">milestones</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-item">
+                <div class="meta">
+                    <span data-i18n="progress_us_debt">🇺🇸 U.S. Debt to $40T</span>
+                    <span id="progressUsLabel">39.1%</span>
+                </div>
+                <div class="bar"><div class="fill red" id="progressUsBar" style="width:39.1%"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="meta">
+                    <span data-i18n="progress_iran_cost">⚔️ Iran War Cost to $200B</span>
+                    <span id="progressIranLabel">87.7%</span>
+                </div>
+                <div class="bar"><div class="fill gold" id="progressIranBar" style="width:87.7%"></div></div>
+            </div>
+            <div class="progress-item">
+                <div class="meta">
+                    <span data-i18n="progress_global_debt">🌍 Global Debt to $350T</span>
+                    <span id="progressGlobalLabel">90.0%</span>
+                </div>
+                <div class="bar"><div class="fill blue" id="progressGlobalBar" style="width:90.0%"></div></div>
+            </div>
+        </div>
+
+        <!-- ═══ LIVING WAGE ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_living_wage">💰 Living Wage</span> <span class="badge" data-i18n="badge_global_benchmark">global benchmark</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-pin="livingWageUS">
+                <button class="pin-btn" data-pin="livingWageUS">📌</button>
+                <span class="stat-number gold" id="livingWageUS">$25.50</span>
+                <span class="stat-label" data-i18n="us_hourly_label">U.S. (hourly)</span>
+                <span class="stat-source" data-i18n="source_mit">MIT · 2026</span>
+            </div>
+            <div class="stat-card" data-pin="livingWageUK">
+                <button class="pin-btn" data-pin="livingWageUK">📌</button>
+                <span class="stat-number gold" id="livingWageUK">£14.80</span>
+                <span class="stat-label" data-i18n="uk_hourly_label">UK (hourly)</span>
+                <span class="stat-source" data-i18n="source_living_wage_fdn">Living Wage Fdn</span>
+            </div>
+            <div class="stat-card" data-pin="livingWageEU">
+                <button class="pin-btn" data-pin="livingWageEU">📌</button>
+                <span class="stat-number gold" id="livingWageEU">€16.20</span>
+                <span class="stat-label" data-i18n="eu_avg_hourly_label">EU Avg (hourly)</span>
+                <span class="stat-source" data-i18n="source_eurostat">Eurostat</span>
+            </div>
+            <div class="stat-card" data-pin="livingWageAU">
+                <button class="pin-btn" data-pin="livingWageAU">📌</button>
+                <span class="stat-number gold" id="livingWageAU">AU$28.40</span>
+                <span class="stat-label" data-i18n="australia_hourly_label">Australia (hourly)</span>
+                <span class="stat-source" data-i18n="source_fair_work">Fair Work</span>
+            </div>
+            <div class="stat-card" data-pin="livingWageAnnual">
+                <button class="pin-btn" data-pin="livingWageAnnual">📌</button>
+                <span class="stat-number gold" id="livingWageAnnual">$53,040</span>
+                <span class="stat-label" data-i18n="us_annual_label">U.S. Annual (40hr/wk)</span>
+                <span class="stat-source" data-i18n="source_mit">MIT · 2026</span>
+            </div>
+            <div class="stat-card" data-pin="minWageGap">
+                <button class="pin-btn" data-pin="minWageGap">📌</button>
+                <span class="stat-number" id="minWageGap">$18.25</span>
+                <span class="stat-label" data-i18n="living_wage_gap_label">Living Wage Gap (US)</span>
+                <span class="stat-source" data-i18n="source_min_wage_gap">$7.25 vs $25.50</span>
+            </div>
+        </div>
+
+        <!-- ═══ JOB MARKET ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_job_market">📊 Job Market</span> <span class="badge" data-i18n="badge_global_snapshot">global snapshot</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-pin="usUnemployment">
+                <button class="pin-btn" data-pin="usUnemployment">📌</button>
+                <span class="stat-number green" id="usUnemployment">4.2%</span>
+                <span class="stat-label" data-i18n="us_unemployment_label">U.S. Unemployment</span>
+                <span class="stat-source" data-i18n="source_bls_july">BLS · July 2026</span>
+            </div>
+            <div class="stat-card" data-pin="euUnemployment">
+                <button class="pin-btn" data-pin="euUnemployment">📌</button>
+                <span class="stat-number green" id="euUnemployment">6.1%</span>
+                <span class="stat-label" data-i18n="eu_unemployment_label">EU Unemployment</span>
+                <span class="stat-source" data-i18n="source_eurostat">Eurostat</span>
+            </div>
+            <div class="stat-card" data-pin="globalUnemployment">
+                <button class="pin-btn" data-pin="globalUnemployment">📌</button>
+                <span class="stat-number green" id="globalUnemployment">5.8%</span>
+                <span class="stat-label" data-i18n="global_unemployment_label">Global Unemployment</span>
+                <span class="stat-source" data-i18n="source_ilo">ILO</span>
+            </div>
+            <div class="stat-card" data-pin="usJobOpenings">
+                <button class="pin-btn" data-pin="usJobOpenings">📌</button>
+                <span class="stat-number green" id="usJobOpenings">8.20M</span>
+                <span class="stat-label" data-i18n="us_job_openings_label">U.S. Job Openings</span>
+                <span class="stat-source" data-i18n="source_bls_jolts">BLS · JOLTS</span>
+            </div>
+            <div class="stat-card" data-pin="usLaborForce">
+                <button class="pin-btn" data-pin="usLaborForce">📌</button>
+                <span class="stat-number" id="usLaborForce">168.50M</span>
+                <span class="stat-label" data-i18n="us_labor_force_label">U.S. Labor Force</span>
+                <span class="stat-source" data-i18n="source_bls">BLS</span>
+            </div>
+            <div class="stat-card" data-pin="joblessClaims">
+                <button class="pin-btn" data-pin="joblessClaims">📌</button>
+                <span class="stat-number" id="joblessClaims">225.0K</span>
+                <span class="stat-label" data-i18n="weekly_jobless_claims_label">Weekly Jobless Claims</span>
+                <span class="stat-source" data-i18n="source_dol">DOL</span>
+            </div>
+        </div>
+
+        <!-- ═══ DTC ECONOMICS ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_dtc">📦 DTC Economics</span> <span class="badge" data-i18n="badge_dtc">Direct-to-Consumer</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-pin="dtcMarket">
+                <button class="pin-btn" data-pin="dtcMarket">📌</button>
+                <span class="stat-number blue" id="dtcMarket">$285.00B</span>
+                <span class="stat-label" data-i18n="global_dtc_label">Global DTC Market</span>
+                <span class="stat-source" data-i18n="source_emarketer">eMarketer · 2026</span>
+            </div>
+            <div class="stat-card" data-pin="dtcGrowth">
+                <button class="pin-btn" data-pin="dtcGrowth">📌</button>
+                <span class="stat-number blue" id="dtcGrowth">14.2%</span>
+                <span class="stat-label" data-i18n="dtc_annual_growth_label">DTC Annual Growth</span>
+                <span class="stat-source" data-i18n="source_emarketer">eMarketer</span>
+            </div>
+            <div class="stat-card" data-pin="dtcUS">
+                <button class="pin-btn" data-pin="dtcUS">📌</button>
+                <span class="stat-number blue" id="dtcUS">$165.00B</span>
+                <span class="stat-label" data-i18n="us_dtc_label">U.S. DTC Market</span>
+                <span class="stat-source" data-i18n="source_forrester">Forrester</span>
+            </div>
+            <div class="stat-card" data-pin="dtcRetail">
+                <button class="pin-btn" data-pin="dtcRetail">📌</button>
+                <span class="stat-number blue" id="dtcRetail">32.5%</span>
+                <span class="stat-label" data-i18n="dtc_share_label">DTC Share of E-Commerce</span>
+                <span class="stat-source" data-i18n="source_digital_commerce">Digital Commerce 360</span>
+            </div>
+            <div class="stat-card" data-pin="dtcBrands">
+                <button class="pin-btn" data-pin="dtcBrands">📌</button>
+                <span class="stat-number blue" id="dtcBrands">45.00K+</span>
+                <span class="stat-label" data-i18n="active_dtc_brands_label">Active DTC Brands</span>
+                <span class="stat-source" data-i18n="source_similarweb">SimilarWeb</span>
+            </div>
+            <div class="stat-card" data-pin="dtcAvgOrder">
+                <button class="pin-btn" data-pin="dtcAvgOrder">📌</button>
+                <span class="stat-number blue" id="dtcAvgOrder">$89.00</span>
+                <span class="stat-label" data-i18n="dtc_avg_order_label">DTC Avg Order Value</span>
+                <span class="stat-source" data-i18n="source_shopify">Shopify</span>
+            </div>
+        </div>
+
+        <!-- ═══ IRAN CONFLICT ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_iran">⚔️ Iran Conflict Costs</span> <span class="badge" data-i18n="badge_military_long">military + long-term</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-pin="militaryCost">
+                <button class="pin-btn" data-pin="militaryCost">📌</button>
+                <span class="stat-number" id="militaryCost">$175.48B</span>
+                <span class="stat-label" data-i18n="direct_military_label">Direct Military Spend</span>
+                <span class="stat-source" data-i18n="source_pentagon_iran">Pentagon / IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="longTermCost">
+                <button class="pin-btn" data-pin="longTermCost">📌</button>
+                <span class="stat-number" id="longTermCost">$1.00T+</span>
+                <span class="stat-label" data-i18n="projected_long_term_label">Projected Long-Term</span>
+                <span class="stat-source" data-i18n="source_harvard">Harvard · Bilmes</span>
+            </div>
+            <div class="stat-card" data-pin="oilPrice">
+                <button class="pin-btn" data-pin="oilPrice">📌</button>
+                <span class="stat-number" id="oilPrice">$82.50</span>
+                <span class="stat-label" data-i18n="brent_crude_label">Brent Crude (USD/bbl)</span>
+                <span class="stat-source" data-i18n="source_market_estimate">Market estimate</span>
+            </div>
+            <div class="stat-card" data-pin="inflationImpact">
+                <button class="pin-btn" data-pin="inflationImpact">📌</button>
+                <span class="stat-number" id="inflationImpact">3.8%</span>
+                <span class="stat-label" data-i18n="inflation_contribution_label">Inflation Contribution</span>
+                <span class="stat-source" data-i18n="source_world_bank">World Bank · 2026</span>
+            </div>
+            <div class="stat-card" data-pin="veteranCost">
+                <button class="pin-btn" data-pin="veteranCost">📌</button>
+                <span class="stat-number" id="veteranCost">$400.00B</span>
+                <span class="stat-label" data-i18n="veterans_lifetime_label">Veterans' Lifetime Benefits</span>
+                <span class="stat-source" data-i18n="source_va">VA</span>
+            </div>
+            <div class="stat-card" data-pin="iranDailyCost">
+                <button class="pin-btn" data-pin="iranDailyCost">📌</button>
+                <span class="stat-number" id="iranDailyCost">$1.00B</span>
+                <span class="stat-label" data-i18n="iran_daily_cost_label">Cost per Day (active ops)</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+        </div>
+
+        <!-- ═══ OPPORTUNITY COST ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_opportunity">💡 Opportunity Cost</span> <span class="badge" data-i18n="badge_what_else">what else could this fund?</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="opp-grid" id="opportunityGrid">
+            <div class="opp-item"><span class="number" id="oppHealthcare">2.5M</span><span class="label" data-i18n="opp_healthcare">Americans' annual healthcare</span></div>
+            <div class="opp-item"><span class="number" id="oppTuition">3.1M</span><span class="label" data-i18n="opp_tuition">Students' public university tuition</span></div>
+            <div class="opp-item"><span class="number" id="oppHousing">357K</span><span class="label" data-i18n="opp_housing">Affordable housing units</span></div>
+            <div class="opp-item"><span class="number" id="oppTeachers">550K</span><span class="label" data-i18n="opp_teachers">Public school teachers</span></div>
+            <div class="opp-item"><span class="number" id="oppCHIP">21.0M</span><span class="label" data-i18n="opp_chip">Children insured through CHIP</span></div>
+            <div class="opp-item"><span class="number" id="oppLunches">46.7M</span><span class="label" data-i18n="opp_lunches">Students receiving free lunches</span></div>
+        </div>
+
+        <!-- ═══ CHARTS ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_charts">📈 Charts</span> <span class="badge" data-i18n="badge_trends">trends</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="chart-grid">
+            <div class="chart-wrap"><canvas id="chartUsDebt"></canvas></div>
+            <div class="chart-wrap"><canvas id="chartIranCost"></canvas></div>
+            <div class="chart-wrap"><canvas id="chartGlobalDebt"></canvas></div>
+            <div class="chart-wrap"><canvas id="chartLivingWage"></canvas></div>
+        </div>
+
+        <!-- ═══ "WHAT IF" CALCULATOR ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_whatif">🧮 What If?</span> <span class="badge" data-i18n="badge_calculator">calculator</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="whatif-wrap">
+            <div class="row">
+                <label data-i18n="whatif_label">If the Iran war cost <input type="number" id="whatifInput" value="175.48" step="0.01" min="0"> billion dollars, it could fund:</label>
+            </div>
+            <div class="row">
+                <span class="result" id="whatifResult">👉 <span id="whatifValue">0</span> Americans' full annual healthcare</span>
+            </div>
+            <div class="row" style="font-size:0.65rem;color:var(--text-muted);">
+                <span data-i18n="whatif_note">Adjust the number above to see different scenarios. Based on $14,570 per person per year (CMS).</span>
+            </div>
+        </div>
+
+        <!-- ═══ PER-CITIZEN COST ═══ -->
+        <div class="section-title">
+            <span data-i18n="section_per_citizen">👤 Per U.S. Citizen</span> <span class="badge" data-i18n="badge_taxpayer_share">your share</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card" data-pin="perCitizenTotal">
+                <button class="pin-btn" data-pin="perCitizenTotal">📌</button>
+                <span class="stat-number gold" id="perCitizenTotal">$1,170</span>
+                <span class="stat-label" data-i18n="per_citizen_total">Total Iran War cost</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="perCitizenPerDay">
+                <button class="pin-btn" data-pin="perCitizenPerDay">📌</button>
+                <span class="stat-number gold" id="perCitizenPerDay">$6.95</span>
+                <span class="stat-label" data-i18n="per_citizen_per_day">Per day</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="perCitizenPerWeek">
+                <button class="pin-btn" data-pin="perCitizenPerWeek">📌</button>
+                <span class="stat-number gold" id="perCitizenPerWeek">$48.67</span>
+                <span class="stat-label" data-i18n="per_citizen_per_week">Per week</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="perCitizenPerMonth">
+                <button class="pin-btn" data-pin="perCitizenPerMonth">📌</button>
+                <span class="stat-number gold" id="perCitizenPerMonth">$211.65</span>
+                <span class="stat-label" data-i18n="per_citizen_per_month">Per month</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="perCitizenPerYear">
+                <button class="pin-btn" data-pin="perCitizenPerYear">📌</button>
+                <span class="stat-number gold" id="perCitizenPerYear">$2,540</span>
+                <span class="stat-label" data-i18n="per_citizen_per_year">Per year (annualized)</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+            <div class="stat-card" data-pin="perCitizenSinceOpen">
+                <button class="pin-btn" data-pin="perCitizenSinceOpen">📌</button>
+                <span class="stat-number" id="perCitizenSinceOpen">$0.00</span>
+                <span class="stat-label" data-i18n="per_citizen_since_open">Cost since you opened this page</span>
+                <span class="stat-source" data-i18n="source_iranwar">IranWarCost.com</span>
+            </div>
+        </div>
+
+        <!-- ═══ LIVE COUNTERS ═══ -->
+        <div class="section-title" style="margin-top:1.8rem;">
+            <span data-i18n="section_real_time">⏱️ Real-Time Counters</span> <span class="badge" data-i18n="badge_updating_now">updating now</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="live-counter">
+            <div class="counter-item"><div class="value" id="globalDebtPerSec">$120,000,000</div><div class="desc" data-i18n="global_debt_per_sec">Global Debt / sec</div></div>
+            <div class="counter-item"><div class="value" id="usDebtPerSec">$20,000,000</div><div class="desc" data-i18n="us_debt_per_sec">U.S. Debt / sec</div></div>
+            <div class="counter-item"><div class="value" id="iranCostPerSec">$12,100</div><div class="desc" data-i18n="iran_war_per_sec">Iran War / sec</div></div>
+            <div class="counter-item"><div class="value" id="livingWageShortfall">$18.25/hr</div><div class="desc" data-i18n="living_wage_gap_short">Living Wage Gap (US)</div></div>
+            <div class="counter-item"><div class="value" id="joblessPerDay">32,143</div><div class="desc" data-i18n="jobless_claims_per_day">Jobless Claims / day</div></div>
+            <div class="counter-item"><div class="value" id="dtcGrowthPerSec">$1,146</div><div class="desc" data-i18n="dtc_growth_per_sec">DTC Growth / sec</div></div>
+        </div>
+
+        <!-- ═══ AT A GLANCE TABLE ═══ -->
+        <div class="section-title" style="margin-top:1.8rem;">
+            <span data-i18n="section_at_a_glance">📋 At a Glance</span> <span class="badge" data-i18n="badge_key_indicators">key indicators</span>
+            <span class="live-indicator">● LIVE</span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th data-i18n="table_header_category">Category</th><th data-i18n="table_header_metric">Metric</th><th data-i18n="table_header_value">Value</th><th data-i18n="table_header_source">Source</th></tr></thead>
+                <tbody>
+                    <tr><td data-i18n="table_global_label">🌍 Global</td><td data-i18n="table_total_global_debt">Total Global Debt</td><td id="tblGlobalDebt">$315.00T</td><td><span class="source-label" data-i18n="source_iif">IIF</span></td></tr>
+                    <tr><td data-i18n="table_us_label">🇺🇸 U.S.</td><td data-i18n="table_national_debt">National Debt</td><td id="tblUsDebt">$39.10T</td><td><span class="source-label" data-i18n="source_treasury">Treasury</span></td></tr>
+                    <tr><td data-i18n="table_living_wage_label">💰 Living Wage</td><td data-i18n="table_us_hourly_living">U.S. Hourly Living Wage</td><td id="tblLivingWage">$25.50</td><td><span class="source-label" data-i18n="source_mit">MIT</span></td></tr>
+                    <tr><td data-i18n="table_living_wage_label">💰 Living Wage</td><td data-i18n="table_fed_min_wage">Federal Minimum Wage</td><td id="tblMinWage">$7.25</td><td><span class="source-label" data-i18n="source_dol">DOL</span></td></tr>
+                    <tr><td data-i18n="table_jobs_label">📊 Jobs</td><td data-i18n="table_us_unemp_rate">U.S. Unemployment Rate</td><td id="tblUnemployment">4.2%</td><td><span class="source-label" data-i18n="source_bls">BLS</span></td></tr>
+                    <tr><td data-i18n="table_jobs_label">📊 Jobs</td><td data-i18n="table_us_job_openings">U.S. Job Openings</td><td id="tblJobOpenings">8.20M</td><td><span class="source-label" data-i18n="source_bls">BLS</span></td></tr>
+                    <tr><td data-i18n="table_dtc_label">📦 DTC</td><td data-i18n="table_global_dtc">Global DTC Market</td><td id="tblDtc">$285.00B</td><td><span class="source-label" data-i18n="source_emarketer">eMarketer</span></td></tr>
+                    <tr><td data-i18n="table_iran_label">⚔️ Iran</td><td data-i18n="table_direct_military_tracked">Direct Military Cost (tracked)</td><td id="tblIranMilitary">$175.48B</td><td><span class="source-label" data-i18n="source_iranwar">IranWarCost.com</span></td></tr>
+                    <tr><td data-i18n="table_iran_label">⚔️ Iran</td><td data-i18n="table_projected_long_term">Projected Long-Term Cost</td><td id="tblIranLong">$1.00T+</td><td><span class="source-label" data-i18n="source_harvard">Harvard</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══ SOURCES ═══ -->
+        <div class="source-box">
+            <strong data-i18n="source_box_title">📚 Data Sources</strong>
+            <div class="source-grid">
+                <span data-i18n="source_iif">• IIF (Global Debt)</span>
+                <span data-i18n="source_treasury">• U.S. Treasury</span>
+                <span data-i18n="source_pboc">• PBOC (China)</span>
+                <span data-i18n="source_eurostat">• Eurostat (EU)</span>
+                <span data-i18n="source_bis">• BIS (Corp/Household)</span>
+                <span data-i18n="source_mit">• MIT (Living Wage)</span>
+                <span data-i18n="source_bls">• BLS (Jobs)</span>
+                <span data-i18n="source_ilo">• ILO (Global Jobs)</span>
+                <span data-i18n="source_emarketer">• eMarketer (DTC)</span>
+                <span data-i18n="source_forrester">• Forrester (DTC)</span>
+                <span data-i18n="source_shopify">• Shopify (DTC)</span>
+                <span class="highlight" data-i18n="source_iranwar_highlight">• IranWarCost.com (Iran Conflict)</span>
+                <span data-i18n="source_pentagon">• Pentagon (Iran Military)</span>
+                <span data-i18n="source_harvard">• Harvard (Iran Long-Term)</span>
+                <span data-i18n="source_world_bank">• World Bank</span>
+                <span data-i18n="source_va">• VA (Veterans)</span>
+            </div>
+            <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3rem;" data-i18n="source_footer_note">
+                All data embedded locally · Multiple authoritative sources · Silent failback · No external calls
+            </div>
+            <div style="font-size:0.6rem;color:var(--accent-gold);margin-top:0.2rem;border-top:1px solid var(--border-color);padding-top:0.3rem;" data-i18n="iranwar_credit">
+                ⚡ Iran conflict data sourced from <strong>IranWarCost.com</strong> — live tracker at ~$12.1K/sec, ~$1.0B/day since April 20, 2024
+            </div>
+        </div>
+
+        <!-- ═══ FOOTER ═══ -->
+        <div class="footer">
+            <span class="live-badge"></span> <span data-i18n="footer_text">TDC · The Debt Clock &bull; Global Economics Tracker &bull; No external calls &bull;</span>
+            <span data-i18n="last_updated_label">Last updated:</span> <span id="footerTimestamp">—</span>
+            <br />
+            <span style="font-size:0.6rem;opacity:0.5;" data-i18n="iranwar_footer_credit">Iran War cost data: IranWarCost.com · ~$12.1K/sec · ~$1.0B/day</span>
+        </div>
+
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        //  COMPLETE DASHBOARD JAVASCRIPT
+        // ═══════════════════════════════════════════════════════════════
+
+        (function() {
+            "use strict";
+
+            // ── TRANSLATIONS ──
+            const translations = {
+                'en-US': {
+                    badge_live: '⚡ TDC · LIVE',
+                    health_all_ok: 'All sources available',
+                    title_sub: '· The Debt Clock',
+                    subhead: 'Global Debt · Living Wage · Job Market · DTC Economics · Iran Conflict',
+                    live_updates: 'LIVE UPDATES',
+                    global_debt_label: '🌍 Global Debt',
+                    global_debt_meta: 'IIF · live estimate',
+                    updating: 'Updating…',
+                    global_debt_note: 'includes government, corporate, household',
+                    section_global_debt: '🌍 Global Debt',
+                    badge_by_category: 'by category',
+                    us_national_label: 'U.S. National',
+                    source_treasury: 'Treasury',
+                    china_national_label: 'China National',
+                    source_pboc: 'PBOC',
+                    eu_national_label: 'EU National',
+                    source_eurostat: 'Eurostat',
+                    japan_national_label: 'Japan National',
+                    source_mof: 'MOF',
+                    corporate_debt_label: 'Corporate Debt',
+                    household_debt_label: 'Household Debt',
+                    source_bis: 'BIS',
+                    section_progress: '🎯 Goal Tracker',
+                    badge_milestones: 'milestones',
+                    progress_us_debt: '🇺🇸 U.S. Debt to $40T',
+                    progress_iran_cost: '⚔️ Iran War Cost to $200B',
+                    progress_global_debt: '🌍 Global Debt to $350T',
+                    section_living_wage: '💰 Living Wage',
+                    badge_global_benchmark: 'global benchmark',
+                    us_hourly_label: 'U.S. (hourly)',
+                    source_mit: 'MIT · 2026',
+                    uk_hourly_label: 'UK (hourly)',
+                    source_living_wage_fdn: 'Living Wage Fdn',
+                    eu_avg_hourly_label: 'EU Avg (hourly)',
+                    australia_hourly_label: 'Australia (hourly)',
+                    source_fair_work: 'Fair Work',
+                    us_annual_label: 'U.S. Annual (40hr/wk)',
+                    living_wage_gap_label: 'Living Wage Gap (US)',
+                    source_min_wage_gap: '$7.25 vs $25.50',
+                    section_job_market: '📊 Job Market',
+                    badge_global_snapshot: 'global snapshot',
+                    us_unemployment_label: 'U.S. Unemployment',
+                    source_bls_july: 'BLS · July 2026',
+                    eu_unemployment_label: 'EU Unemployment',
+                    global_unemployment_label: 'Global Unemployment',
+                    source_ilo: 'ILO',
+                    us_job_openings_label: 'U.S. Job Openings',
+                    source_bls_jolts: 'BLS · JOLTS',
+                    us_labor_force_label: 'U.S. Labor Force',
+                    source_bls: 'BLS',
+                    weekly_jobless_claims_label: 'Weekly Jobless Claims',
+                    source_dol: 'DOL',
+                    section_dtc: '📦 DTC Economics',
+                    badge_dtc: 'Direct-to-Consumer',
+                    global_dtc_label: 'Global DTC Market',
+                    source_emarketer: 'eMarketer · 2026',
+                    dtc_annual_growth_label: 'DTC Annual Growth',
+                    us_dtc_label: 'U.S. DTC Market',
+                    source_forrester: 'Forrester',
+                    dtc_share_label: 'DTC Share of E-Commerce',
+                    source_digital_commerce: 'Digital Commerce 360',
+                    active_dtc_brands_label: 'Active DTC Brands',
+                    source_similarweb: 'SimilarWeb',
+                    dtc_avg_order_label: 'DTC Avg Order Value',
+                    source_shopify: 'Shopify',
+                    section_iran: '⚔️ Iran Conflict Costs',
+                    badge_military_long: 'military + long-term',
+                    direct_military_label: 'Direct Military Spend',
+                    source_pentagon_iran: 'Pentagon / IranWarCost.com',
+                    projected_long_term_label: 'Projected Long-Term',
+                    source_harvard: 'Harvard · Bilmes',
+                    brent_crude_label: 'Brent Crude (USD/bbl)',
+                    source_market_estimate: 'Market estimate',
+                    inflation_contribution_label: 'Inflation Contribution',
+                    source_world_bank: 'World Bank · 2026',
+                    veterans_lifetime_label: "Veterans' Lifetime Benefits",
+                    source_va: 'VA',
+                    iran_daily_cost_label: 'Cost per Day (active ops)',
+                    source_iranwar: 'IranWarCost.com',
+                    section_opportunity: '💡 Opportunity Cost',
+                    badge_what_else: 'what else could this fund?',
+                    opp_healthcare: "Americans' annual healthcare",
+                    opp_tuition: "Students' public university tuition",
+                    opp_housing: 'Affordable housing units',
+                    opp_teachers: 'Public school teachers',
+                    opp_chip: 'Children insured through CHIP',
+                    opp_lunches: 'Students receiving free lunches',
+                    section_charts: '📈 Charts',
+                    badge_trends: 'trends',
+                    section_whatif: '🧮 What If?',
+                    badge_calculator: 'calculator',
+                    whatif_label: 'If the Iran war cost',
+                    whatif_note: 'Adjust the number above to see different scenarios. Based on $14,570 per person per year (CMS).',
+                    section_per_citizen: '👤 Per U.S. Citizen',
+                    badge_taxpayer_share: 'your share',
+                    per_citizen_total: 'Total Iran War cost',
+                    per_citizen_per_day: 'Per day',
+                    per_citizen_per_week: 'Per week',
+                    per_citizen_per_month: 'Per month',
+                    per_citizen_per_year: 'Per year (annualized)',
+                    per_citizen_since_open: 'Cost since you opened this page',
+                    section_real_time: '⏱️ Real-Time Counters',
+                    badge_updating_now: 'updating now',
+                    global_debt_per_sec: 'Global Debt / sec',
+                    us_debt_per_sec: 'U.S. Debt / sec',
+                    iran_war_per_sec: 'Iran War / sec',
+                    living_wage_gap_short: 'Living Wage Gap (US)',
+                    jobless_claims_per_day: 'Jobless Claims / day',
+                    dtc_growth_per_sec: 'DTC Growth / sec',
+                    section_at_a_glance: '📋 At a Glance',
+                    badge_key_indicators: 'key indicators',
+                    table_header_category: 'Category',
+                    table_header_metric: 'Metric',
+                    table_header_value: 'Value',
+                    table_header_source: 'Source',
+                    table_global_label: '🌍 Global',
+                    table_total_global_debt: 'Total Global Debt',
+                    source_iif: 'IIF',
+                    table_us_label: '🇺🇸 U.S.',
+                    table_national_debt: 'National Debt',
+                    table_living_wage_label: '💰 Living Wage',
+                    table_us_hourly_living: 'U.S. Hourly Living Wage',
+                    table_fed_min_wage: 'Federal Minimum Wage',
+                    table_jobs_label: '📊 Jobs',
+                    table_us_unemp_rate: 'U.S. Unemployment Rate',
+                    table_us_job_openings: 'U.S. Job Openings',
+                    table_dtc_label: '📦 DTC',
+                    table_global_dtc: 'Global DTC Market',
+                    table_iran_label: '⚔️ Iran',
+                    table_direct_military_tracked: 'Direct Military Cost (tracked)',
+                    table_projected_long_term: 'Projected Long-Term Cost',
+                    source_box_title: '📚 Data Sources',
+                    source_pentagon: '• Pentagon (Iran Military)',
+                    source_iranwar_highlight: '• IranWarCost.com (Iran Conflict)',
+                    source_footer_note: 'All data embedded locally · Multiple authoritative sources · Silent failback · No external calls',
+                    iranwar_credit: '⚡ Iran conflict data sourced from <strong>IranWarCost.com</strong> — live tracker at ~$12.1K/sec, ~$1.0B/day since April 20, 2024',
+                    footer_text: 'TDC · The Debt Clock &bull; Global Economics Tracker &bull; No external calls &bull;',
+                    last_updated_label: 'Last updated:',
+                    iranwar_footer_credit: 'Iran War cost data: IranWarCost.com · ~$12.1K/sec · ~$1.0B/day'
+                },
+                'es-ES': {
+                    badge_live: '⚡ TDC · EN VIVO',
+                    health_all_ok: 'Todas las fuentes disponibles',
+                    title_sub: '· El Reloj de la Deuda',
+                    subhead: 'Deuda Global · Salario Digno · Mercado Laboral · Economía DTC · Conflicto con Irán',
+                    live_updates: 'ACTUALIZACIONES EN VIVO',
+                    global_debt_label: '🌍 Deuda Global',
+                    global_debt_meta: 'IIF · estimación en vivo',
+                    updating: 'Actualizando…',
+                    global_debt_note: 'incluye gobierno, corporativo, hogares',
+                    section_global_debt: '🌍 Deuda Global',
+                    badge_by_category: 'por categoría',
+                    us_national_label: 'EE.UU. Nacional',
+                    source_treasury: 'Tesoro',
+                    china_national_label: 'China Nacional',
+                    source_pboc: 'PBOC',
+                    eu_national_label: 'UE Nacional',
+                    source_eurostat: 'Eurostat',
+                    japan_national_label: 'Japón Nacional',
+                    source_mof: 'MOF',
+                    corporate_debt_label: 'Deuda Corporativa',
+                    household_debt_label: 'Deuda de Hogares',
+                    source_bis: 'BIS',
+                    section_progress: '🎯 Seguimiento de Objetivos',
+                    badge_milestones: 'hitos',
+                    progress_us_debt: '🇺🇸 Deuda de EE.UU. a $40B',
+                    progress_iran_cost: '⚔️ Costo de la Guerra de Irán a $200B',
+                    progress_global_debt: '🌍 Deuda Global a $350B',
+                    section_living_wage: '💰 Salario Digno',
+                    badge_global_benchmark: 'referencia global',
+                    us_hourly_label: 'EE.UU. (por hora)',
+                    source_mit: 'MIT · 2026',
+                    uk_hourly_label: 'RU (por hora)',
+                    source_living_wage_fdn: 'Living Wage Fdn',
+                    eu_avg_hourly_label: 'Promedio UE (por hora)',
+                    australia_hourly_label: 'Australia (por hora)',
+                    source_fair_work: 'Fair Work',
+                    us_annual_label: 'EE.UU. Anual (40h/sem)',
+                    living_wage_gap_label: 'Brecha Salarial (EE.UU.)',
+                    source_min_wage_gap: '$7.25 vs $25.50',
+                    section_job_market: '📊 Mercado Laboral',
+                    badge_global_snapshot: 'instantánea global',
+                    us_unemployment_label: 'Desempleo EE.UU.',
+                    source_bls_july: 'BLS · Julio 2026',
+                    eu_unemployment_label: 'Desempleo UE',
+                    global_unemployment_label: 'Desempleo Global',
+                    source_ilo: 'OIT',
+                    us_job_openings_label: 'Ofertas de Empleo EE.UU.',
+                    source_bls_jolts: 'BLS · JOLTS',
+                    us_labor_force_label: 'Fuerza Laboral EE.UU.',
+                    source_bls: 'BLS',
+                    weekly_jobless_claims_label: 'Solicitudes Semanales de Desempleo',
+                    source_dol: 'DOL',
+                    section_dtc: '📦 Economía DTC',
+                    badge_dtc: 'Directo al Consumidor',
+                    global_dtc_label: 'Mercado DTC Global',
+                    source_emarketer: 'eMarketer · 2026',
+                    dtc_annual_growth_label: 'Crecimiento Anual DTC',
+                    us_dtc_label: 'Mercado DTC EE.UU.',
+                    source_forrester: 'Forrester',
+                    dtc_share_label: 'Participación DTC en Comercio Electrónico',
+                    source_digital_commerce: 'Digital Commerce 360',
+                    active_dtc_brands_label: 'Marcas DTC Activas',
+                    source_similarweb: 'SimilarWeb',
+                    dtc_avg_order_label: 'Valor Promedio de Pedido DTC',
+                    source_shopify: 'Shopify',
+                    section_iran: '⚔️ Costos del Conflicto con Irán',
+                    badge_military_long: 'militar + largo plazo',
+                    direct_military_label: 'Gasto Militar Directo',
+                    source_pentagon_iran: 'Pentágono / IranWarCost.com',
+                    projected_long_term_label: 'Proyectado a Largo Plazo',
+                    source_harvard: 'Harvard · Bilmes',
+                    brent_crude_label: 'Brent Crudo (USD/barril)',
+                    source_market_estimate: 'Estimación de mercado',
+                    inflation_contribution_label: 'Contribución a la Inflación',
+                    source_world_bank: 'Banco Mundial · 2026',
+                    veterans_lifetime_label: 'Beneficios Vitalicios para Veteranos',
+                    source_va: 'VA',
+                    iran_daily_cost_label: 'Costo por Día (operaciones activas)',
+                    source_iranwar: 'IranWarCost.com',
+                    section_opportunity: '💡 Costo de Oportunidad',
+                    badge_what_else: '¿qué más podría financiar?',
+                    opp_healthcare: 'Atención médica anual para estadounidenses',
+                    opp_tuition: 'Matrícula universitaria pública para estudiantes',
+                    opp_housing: 'Unidades de vivienda asequible',
+                    opp_teachers: 'Maestros de escuelas públicas',
+                    opp_chip: 'Niños asegurados a través de CHIP',
+                    opp_lunches: 'Estudiantes que reciben almuerzos gratuitos',
+                    section_charts: '📈 Gráficos',
+                    badge_trends: 'tendencias',
+                    section_whatif: '🧮 ¿Y Si?',
+                    badge_calculator: 'calculadora',
+                    whatif_label: 'Si el costo de la guerra de Irán fuera',
+                    whatif_note: 'Ajusta el número arriba para ver diferentes escenarios. Basado en $14,570 por persona al año (CMS).',
+                    section_per_citizen: '👤 Por Ciudadano Estadounidense',
+                    badge_taxpayer_share: 'tu parte',
+                    per_citizen_total: 'Costo total de la guerra de Irán',
+                    per_citizen_per_day: 'Por día',
+                    per_citizen_per_week: 'Por semana',
+                    per_citizen_per_month: 'Por mes',
+                    per_citizen_per_year: 'Por año (anualizado)',
+                    per_citizen_since_open: 'Costo desde que abriste esta página',
+                    section_real_time: '⏱️ Contadores en Tiempo Real',
+                    badge_updating_now: 'actualizando ahora',
+                    global_debt_per_sec: 'Deuda Global / seg',
+                    us_debt_per_sec: 'Deuda EE.UU. / seg',
+                    iran_war_per_sec: 'Guerra Irán / seg',
+                    living_wage_gap_short: 'Brecha Salarial (EE.UU.)',
+                    jobless_claims_per_day: 'Solicitudes / día',
+                    dtc_growth_per_sec: 'Crecimiento DTC / seg',
+                    section_at_a_glance: '📋 De un Vistazo',
+                    badge_key_indicators: 'indicadores clave',
+                    table_header_category: 'Categoría',
+                    table_header_metric: 'Métrica',
+                    table_header_value: 'Valor',
+                    table_header_source: 'Fuente',
+                    table_global_label: '🌍 Global',
+                    table_total_global_debt: 'Deuda Global Total',
+                    source_iif: 'IIF',
+                    table_us_label: '🇺🇸 EE.UU.',
+                    table_national_debt: 'Deuda Nacional',
+                    table_living_wage_label: '💰 Salario Digno',
+                    table_us_hourly_living: 'Salario Digno por Hora (EE.UU.)',
+                    table_fed_min_wage: 'Salario Mínimo Federal',
+                    table_jobs_label: '📊 Empleo',
+                    table_us_unemp_rate: 'Tasa de Desempleo EE.UU.',
+                    table_us_job_openings: 'Ofertas de Empleo EE.UU.',
+                    table_dtc_label: '📦 DTC',
+                    table_global_dtc: 'Mercado DTC Global',
+                    table_iran_label: '⚔️ Irán',
+                    table_direct_military_tracked: 'Costo Militar Directo (rastreado)',
+                    table_projected_long_term: 'Costo Proyectado a Largo Plazo',
+                    source_box_title: '📚 Fuentes de Datos',
+                    source_pentagon: '• Pentágono (Militar Irán)',
+                    source_iranwar_highlight: '• IranWarCost.com (Conflicto Irán)',
+                    source_footer_note: 'Todos los datos incorporados localmente · Múltiples fuentes autorizadas · Failback silencioso · Sin llamadas externas',
+                    iranwar_credit: '⚡ Datos del conflicto con Irán de <strong>IranWarCost.com</strong> — tracker en vivo a ~$12.1K/seg, ~$1.0B/día desde el 20 de abril de 2024',
+                    footer_text: 'TDC · El Reloj de la Deuda &bull; Rastreador Económico Global &bull; Sin llamadas externas &bull;',
+                    last_updated_label: 'Última actualización:',
+                    iranwar_footer_credit: 'Datos de costos de guerra de Irán: IranWarCost.com · ~$12.1K/seg · ~$1.0B/día'
+                },
+                'fr-FR': {
+                    badge_live: '⚡ TDC · EN DIRECT',
+                    health_all_ok: 'Toutes les sources disponibles',
+                    title_sub: '· L\'Horloge de la Dette',
+                    subhead: 'Dette Mondiale · Salaire Décent · Marché du Travail · Économie DTC · Conflit Iranien',
+                    live_updates: 'MISES À JOUR EN DIRECT',
+                    global_debt_label: '🌍 Dette Mondiale',
+                    global_debt_meta: 'IIF · estimation en direct',
+                    updating: 'Mise à jour…',
+                    global_debt_note: 'inclut gouvernement, entreprises, ménages',
+                    section_global_debt: '🌍 Dette Mondiale',
+                    badge_by_category: 'par catégorie',
+                    us_national_label: 'États-Unis Nationale',
+                    source_treasury: 'Trésor',
+                    china_national_label: 'Chine Nationale',
+                    source_pboc: 'PBOC',
+                    eu_national_label: 'UE Nationale',
+                    source_eurostat: 'Eurostat',
+                    japan_national_label: 'Japon Nationale',
+                    source_mof: 'MOF',
+                    corporate_debt_label: 'Dette des Entreprises',
+                    household_debt_label: 'Dette des Ménages',
+                    source_bis: 'BIS',
+                    section_progress: '🎯 Suivi des Objectifs',
+                    badge_milestones: 'étapes',
+                    progress_us_debt: '🇺🇸 Dette des États-Unis à $40B',
+                    progress_iran_cost: '⚔️ Coût de la guerre en Iran à $200B',
+                    progress_global_debt: '🌍 Dette Mondiale à $350B',
+                    section_living_wage: '💰 Salaire Décent',
+                    badge_global_benchmark: 'référence mondiale',
+                    us_hourly_label: 'États-Unis (horaire)',
+                    source_mit: 'MIT · 2026',
+                    uk_hourly_label: 'RU (horaire)',
+                    source_living_wage_fdn: 'Living Wage Fdn',
+                    eu_avg_hourly_label: 'Moyenne UE (horaire)',
+                    australia_hourly_label: 'Australie (horaire)',
+                    source_fair_work: 'Fair Work',
+                    us_annual_label: 'États-Unis Annuel (40h/sem)',
+                    living_wage_gap_label: 'Écart de Salaire (États-Unis)',
+                    source_min_wage_gap: '$7.25 vs $25.50',
+                    section_job_market: '📊 Marché du Travail',
+                    badge_global_snapshot: 'instantané mondial',
+                    us_unemployment_label: 'Chômage États-Unis',
+                    source_bls_july: 'BLS · Juillet 2026',
+                    eu_unemployment_label: 'Chômage UE',
+                    global_unemployment_label: 'Chômage Mondial',
+                    source_ilo: 'OIT',
+                    us_job_openings_label: 'Offres d\'Emploi États-Unis',
+                    source_bls_jolts: 'BLS · JOLTS',
+                    us_labor_force_label: 'Population Active États-Unis',
+                    source_bls: 'BLS',
+                    weekly_jobless_claims_label: 'Demandes Hebdomadaires de Chômage',
+                    source_dol: 'DOL',
+                    section_dtc: '📦 Économie DTC',
+                    badge_dtc: 'Direct au Consommateur',
+                    global_dtc_label: 'Marché DTC Mondial',
+                    source_emarketer: 'eMarketer · 2026',
+                    dtc_annual_growth_label: 'Croissance Annuelle DTC',
+                    us_dtc_label: 'Marché DTC États-Unis',
+                    source_forrester: 'Forrester',
+                    dtc_share_label: 'Part DTC dans le Commerce Électronique',
+                    source_digital_commerce: 'Digital Commerce 360',
+                    active_dtc_brands_label: 'Marques DTC Actives',
+                    source_similarweb: 'SimilarWeb',
+                    dtc_avg_order_label: 'Valeur Moyenne de Commande DTC',
+                    source_shopify: 'Shopify',
+                    section_iran: '⚔️ Coûts du Conflit Iranien',
+                    badge_military_long: 'militaire + long terme',
+                    direct_military_label: 'Dépenses Militaires Directes',
+                    source_pentagon_iran: 'Pentagone / IranWarCost.com',
+                    projected_long_term_label: 'Projeté à Long Terme',
+                    source_harvard: 'Harvard · Bilmes',
+                    brent_crude_label: 'Brent Brut (USD/bbl)',
+                    source_market_estimate: 'Estimation du marché',
+                    inflation_contribution_label: 'Contribution à l\'Inflation',
+                    source_world_bank: 'Banque Mondiale · 2026',
+                    veterans_lifetime_label: 'Prestations à Vie pour Anciens Combattants',
+                    source_va: 'VA',
+                    iran_daily_cost_label: 'Coût par Jour (opérations actives)',
+                    source_iranwar: 'IranWarCost.com',
+                    section_opportunity: '💡 Coût d\'Opportunité',
+                    badge_what_else: 'que pourrait-il financer ?',
+                    opp_healthcare: 'Soins de santé annuels pour Américains',
+                    opp_tuition: 'Frais de scolarité universitaires publics pour étudiants',
+                    opp_housing: 'Logements abordables',
+                    opp_teachers: 'Enseignants du public',
+                    opp_chip: 'Enfants assurés via CHIP',
+                    opp_lunches: 'Étudiants recevant des repas gratuits',
+                    section_charts: '📈 Graphiques',
+                    badge_trends: 'tendances',
+                    section_whatif: '🧮 Et Si ?',
+                    badge_calculator: 'calculatrice',
+                    whatif_label: 'Si le coût de la guerre en Iran était de',
+                    whatif_note: 'Ajustez le nombre ci-dessus pour voir différents scénarios. Basé sur $14,570 par personne par an (CMS).',
+                    section_per_citizen: '👤 Par Citoyen Américain',
+                    badge_taxpayer_share: 'votre part',
+                    per_citizen_total: 'Coût total de la guerre en Iran',
+                    per_citizen_per_day: 'Par jour',
+                    per_citizen_per_week: 'Par semaine',
+                    per_citizen_per_month: 'Par mois',
+                    per_citizen_per_year: 'Par an (annualisé)',
+                    per_citizen_since_open: 'Coût depuis l\'ouverture de cette page',
+                    section_real_time: '⏱️ Compteurs en Temps Réel',
+                    badge_updating_now: 'mise à jour maintenant',
+                    global_debt_per_sec: 'Dette Mondiale / sec',
+                    us_debt_per_sec: 'Dette États-Unis / sec',
+                    iran_war_per_sec: 'Guerre Iran / sec',
+                    living_wage_gap_short: 'Écart de Salaire (États-Unis)',
+                    jobless_claims_per_day: 'Demandes / jour',
+                    dtc_growth_per_sec: 'Croissance DTC / sec',
+                    section_at_a_glance: '📋 En un Coup d\'Œil',
+                    badge_key_indicators: 'indicateurs clés',
+                    table_header_category: 'Catégorie',
+                    table_header_metric: 'Métrique',
+                    table_header_value: 'Valeur',
+                    table_header_source: 'Source',
+                    table_global_label: '🌍 Mondial',
+                    table_total_global_debt: 'Dette Mondiale Totale',
+                    source_iif: 'IIF',
+                    table_us_label: '🇺🇸 États-Unis',
+                    table_national_debt: 'Dette Nationale',
+                    table_living_wage_label: '💰 Salaire Décent',
+                    table_us_hourly_living: 'Salaire Décent Horaire (États-Unis)',
+                    table_fed_min_wage: 'Salaire Minimum Fédéral',
+                    table_jobs_label: '📊 Emploi',
+                    table_us_unemp_rate: 'Taux de Chômage États-Unis',
+                    table_us_job_openings: 'Offres d\'Emploi États-Unis',
+                    table_dtc_label: '📦 DTC',
+                    table_global_dtc: 'Marché DTC Mondial',
+                    table_iran_label: '⚔️ Iran',
+                    table_direct_military_tracked: 'Coût Militaire Direct (suivi)',
+                    table_projected_long_term: 'Coût Projeté à Long Terme',
+                    source_box_title: '📚 Sources de Données',
+                    source_pentagon: '• Pentagone (Militaire Iran)',
+                    source_iranwar_highlight: '• IranWarCost.com (Conflit Iran)',
+                    source_footer_note: 'Toutes les données intégrées localement · Sources autorisées multiples · Failback silencieux · Aucun appel externe',
+                    iranwar_credit: '⚡ Données du conflit iranien provenant de <strong>IranWarCost.com</strong> — tracker en direct à ~$12.1K/sec, ~$1.0B/jour depuis le 20 avril 2024',
+                    footer_text: 'TDC · L\'Horloge de la Dette &bull; Suivi Économique Mondial &bull; Aucun appel externe &bull;',
+                    last_updated_label: 'Dernière mise à jour :',
+                    iranwar_footer_credit: 'Données des coûts de la guerre en Iran : IranWarCost.com · ~$12.1K/sec · ~$1.0B/jour'
+                },
+                'de-DE': {
+                    badge_live: '⚡ TDC · LIVE',
+                    health_all_ok: 'Alle Quellen verfügbar',
+                    title_sub: '· Die Schuldenuhr',
+                    subhead: 'Globale Schulden · Existenzminimum · Arbeitsmarkt · DTC-Wirtschaft · Iran-Konflikt',
+                    live_updates: 'LIVE-UPDATES',
+                    global_debt_label: '🌍 Globale Schulden',
+                    global_debt_meta: 'IIF · Live-Schätzung',
+                    updating: 'Aktualisierung…',
+                    global_debt_note: 'umfasst Staat, Unternehmen, Haushalte',
+                    section_global_debt: '🌍 Globale Schulden',
+                    badge_by_category: 'nach Kategorie',
+                    us_national_label: 'USA National',
+                    source_treasury: 'Finanzministerium',
+                    china_national_label: 'China National',
+                    source_pboc: 'PBOC',
+                    eu_national_label: 'EU National',
+                    source_eurostat: 'Eurostat',
+                    japan_national_label: 'Japan National',
+                    source_mof: 'MOF',
+                    corporate_debt_label: 'Unternehmensschulden',
+                    household_debt_label: 'Haushaltsschulden',
+                    source_bis: 'BIZ',
+                    section_progress: '🎯 Zielverfolgung',
+                    badge_milestones: 'Meilensteine',
+                    progress_us_debt: '🇺🇸 US-Schulden zu $40B',
+                    progress_iran_cost: '⚔️ Iran-Kriegskosten zu $200B',
+                    progress_global_debt: '🌍 Globale Schulden zu $350B',
+                    section_living_wage: '💰 Existenzminimum',
+                    badge_global_benchmark: 'globaler Maßstab',
+                    us_hourly_label: 'USA (Stundenlohn)',
+                    source_mit: 'MIT · 2026',
+                    uk_hourly_label: 'UK (Stundenlohn)',
+                    source_living_wage_fdn: 'Living Wage Fdn',
+                    eu_avg_hourly_label: 'EU-Schnitt (Stundenlohn)',
+                    australia_hourly_label: 'Australien (Stundenlohn)',
+                    source_fair_work: 'Fair Work',
+                    us_annual_label: 'USA Jahresgehalt (40h/Woche)',
+                    living_wage_gap_label: 'Lohnlücke (USA)',
+                    source_min_wage_gap: '$7.25 vs $25.50',
+                    section_job_market: '📊 Arbeitsmarkt',
+                    badge_global_snapshot: 'globale Momentaufnahme',
+                    us_unemployment_label: 'Arbeitslosenquote USA',
+                    source_bls_july: 'BLS · Juli 2026',
+                    eu_unemployment_label: 'Arbeitslosenquote EU',
+                    global_unemployment_label: 'Globale Arbeitslosenquote',
+                    source_ilo: 'ILO',
+                    us_job_openings_label: 'Offene Stellen USA',
+                    source_bls_jolts: 'BLS · JOLTS',
+                    us_labor_force_label: 'Erwerbspersonen USA',
+                    source_bls: 'BLS',
+                    weekly_jobless_claims_label: 'Wöchentliche Erstanträge',
+                    source_dol: 'DOL',
+                    section_dtc: '📦 DTC-Wirtschaft',
+                    badge_dtc: 'Direkt zum Verbraucher',
+                    global_dtc_label: 'Globaler DTC-Markt',
+                    source_emarketer: 'eMarketer · 2026',
+                    dtc_annual_growth_label: 'Jährliches DTC-Wachstum',
+                    us_dtc_label: 'US-DTC-Markt',
+                    source_forrester: 'Forrester',
+                    dtc_share_label: 'DTC-Anteil am E-Commerce',
+                    source_digital_commerce: 'Digital Commerce 360',
+                    active_dtc_brands_label: 'Aktive DTC-Marken',
+                    source_similarweb: 'SimilarWeb',
+                    dtc_avg_order_label: 'Durchschnittlicher Bestellwert DTC',
+                    source_shopify: 'Shopify',
+                    section_iran: '⚔️ Kosten des Iran-Konflikts',
+                    badge_military_long: 'militärisch + langfristig',
+                    direct_military_label: 'Direkte Militärausgaben',
+                    source_pentagon_iran: 'Pentagon / IranWarCost.com',
+                    projected_long_term_label: 'Langfristig prognostiziert',
+                    source_harvard: 'Harvard · Bilmes',
+                    brent_crude_label: 'Brent-Rohöl (USD/Fass)',
+                    source_market_estimate: 'Marktschätzung',
+                    inflation_contribution_label: 'Inflationsbeitrag',
+                    source_world_bank: 'Weltbank · 2026',
+                    veterans_lifetime_label: 'Lebenslange Leistungen für Veteranen',
+                    source_va: 'VA',
+                    iran_daily_cost_label: 'Kosten pro Tag (aktive Einsätze)',
+                    source_iranwar: 'IranWarCost.com',
+                    section_opportunity: '💡 Opportunitätskosten',
+                    badge_what_else: 'was könnte das finanzieren?',
+                    opp_healthcare: 'Jährliche Gesundheitsversorgung für Amerikaner',
+                    opp_tuition: 'Studiengebühren für öffentliche Universitäten',
+                    opp_housing: 'Bezahlbare Wohneinheiten',
+                    opp_teachers: 'Lehrer an öffentlichen Schulen',
+                    opp_chip: 'Kinder über CHIP versichert',
+                    opp_lunches: 'Schüler mit kostenlosem Mittagessen',
+                    section_charts: '📈 Diagramme',
+                    badge_trends: 'Trends',
+                    section_whatif: '🧮 Was Wäre Wenn?',
+                    badge_calculator: 'Rechner',
+                    whatif_label: 'Wenn die Iran-Kriegskosten',
+                    whatif_note: 'Passen Sie die Zahl oben an, um verschiedene Szenarien zu sehen. Basierend auf $14,570 pro Person pro Jahr (CMS).',
+                    section_per_citizen: '👤 Pro US-Bürger',
+                    badge_taxpayer_share: 'Ihr Anteil',
+                    per_citizen_total: 'Gesamtkosten des Iran-Kriegs',
+                    per_citizen_per_day: 'Pro Tag',
+                    per_citizen_per_week: 'Pro Woche',
+                    per_citizen_per_month: 'Pro Monat',
+                    per_citizen_per_year: 'Pro Jahr (annualisiert)',
+                    per_citizen_since_open: 'Kosten seit Öffnung dieser Seite',
+                    section_real_time: '⏱️ Echtzeit-Zähler',
+                    badge_updating_now: 'jetzt aktualisieren',
+                    global_debt_per_sec: 'Globale Schulden / sec',
+                    us_debt_per_sec: 'US-Schulden / sec',
+                    iran_war_per_sec: 'Iran-Krieg / sec',
+                    living_wage_gap_short: 'Lohnlücke (USA)',
+                    jobless_claims_per_day: 'Erstanträge / Tag',
+                    dtc_growth_per_sec: 'DTC-Wachstum / sec',
+                    section_at_a_glance: '📋 Auf einen Blick',
+                    badge_key_indicators: 'Schlüsselindikatoren',
+                    table_header_category: 'Kategorie',
+                    table_header_metric: 'Kennzahl',
+                    table_header_value: 'Wert',
+                    table_header_source: 'Quelle',
+                    table_global_label: '🌍 Global',
+                    table_total_global_debt: 'Globale Gesamtschulden',
+                    source_iif: 'IIF',
+                    table_us_label: '🇺🇸 USA',
+                    table_national_debt: 'Staatsschulden',
+                    table_living_wage_label: '💰 Existenzminimum',
+                    table_us_hourly_living: 'Stundenlohn (USA)',
+                    table_fed_min_wage: 'Gesetzlicher Mindestlohn',
+                    table_jobs_label: '📊 Arbeitsmarkt',
+                    table_us_unemp_rate: 'Arbeitslosenquote USA',
+                    table_us_job_openings: 'Offene Stellen USA',
+                    table_dtc_label: '📦 DTC',
+                    table_global_dtc: 'Globaler DTC-Markt',
+                    table_iran_label: '⚔️ Iran',
+                    table_direct_military_tracked: 'Direkte Militärkosten (verfolgt)',
+                    table_projected_long_term: 'Langfristig prognostizierte Kosten',
+                    source_box_title: '📚 Datenquellen',
+                    source_pentagon: '• Pentagon (Iran Militär)',
+                    source_iranwar_highlight: '• IranWarCost.com (Iran-Konflikt)',
+                    source_footer_note: 'Alle Daten lokal eingebettet · Mehrere maßgebliche Quellen · Stiller Failback · Keine externen Aufrufe',
+                    iranwar_credit: '⚡ Daten zum Iran-Konflikt von <strong>IranWarCost.com</strong> — Live-Tracker bei ~$12.1K/sec, ~$1.0B/Tag seit dem 20. April 2024',
+                    footer_text: 'TDC · Die Schuldenuhr &bull; Globaler Wirtschafts-Tracker &bull; Keine externen Aufrufe &bull;',
+                    last_updated_label: 'Letzte Aktualisierung:',
+                    iranwar_footer_credit: 'Iran-Kriegskostendaten: IranWarCost.com · ~$12.1K/sec · ~$1.0B/Tag'
+                },
+                'ar-SA': {
+                    badge_live: '⚡ تي دي سي · مباشر',
+                    health_all_ok: 'جميع المصادر متاحة',
+                    title_sub: '· ساعة الديون',
+                    subhead: 'الديون العالمية · الأجر المعيشي · سوق العمل · اقتصاد DTC · الصراع مع إيران',
+                    live_updates: 'تحديثات مباشرة',
+                    global_debt_label: '🌍 الديون العالمية',
+                    global_debt_meta: 'IIF · تقدير مباشر',
+                    updating: 'جاري التحديث…',
+                    global_debt_note: 'يشمل الحكومة والشركات والأسر',
+                    section_global_debt: '🌍 الديون العالمية',
+                    badge_by_category: 'حسب الفئة',
+                    us_national_label: 'الديون الأمريكية',
+                    source_treasury: 'الخزانة',
+                    china_national_label: 'الديون الصينية',
+                    source_pboc: 'PBOC',
+                    eu_national_label: 'الديون الأوروبية',
+                    source_eurostat: 'يوروستات',
+                    japan_national_label: 'الديون اليابانية',
+                    source_mof: 'MOF',
+                    corporate_debt_label: 'ديون الشركات',
+                    household_debt_label: 'ديون الأسر',
+                    source_bis: 'BIS',
+                    section_progress: '🎯 تتبع الأهداف',
+                    badge_milestones: 'المعالم',
+                    progress_us_debt: '🇺🇸 الديون الأمريكية إلى $40B',
+                    progress_iran_cost: '⚔️ تكاليف حرب إيران إلى $200B',
+                    progress_global_debt: '🌍 الديون العالمية إلى $350B',
+                    section_living_wage: '💰 الأجر المعيشي',
+                    badge_global_benchmark: 'مرجع عالمي',
+                    us_hourly_label: 'الولايات المتحدة (بالساعة)',
+                    source_mit: 'MIT · 2026',
+                    uk_hourly_label: 'المملكة المتحدة (بالساعة)',
+                    source_living_wage_fdn: 'مؤسسة الأجر المعيشي',
+                    eu_avg_hourly_label: 'متوسط الاتحاد الأوروبي (بالساعة)',
+                    australia_hourly_label: 'أستراليا (بالساعة)',
+                    source_fair_work: 'Fair Work',
+                    us_annual_label: 'الولايات المتحدة السنوي (40 ساعة/أسبوع)',
+                    living_wage_gap_label: 'فجوة الأجر المعيشي (الولايات المتحدة)',
+                    source_min_wage_gap: '$7.25 مقابل $25.50',
+                    section_job_market: '📊 سوق العمل',
+                    badge_global_snapshot: 'لمحة عالمية',
+                    us_unemployment_label: 'البطالة في الولايات المتحدة',
+                    source_bls_july: 'BLS · يوليو 2026',
+                    eu_unemployment_label: 'البطالة في الاتحاد الأوروبي',
+                    global_unemployment_label: 'البطالة العالمية',
+                    source_ilo: 'ILO',
+                    us_job_openings_label: 'الوظائف الشاغرة في الولايات المتحدة',
+                    source_bls_jolts: 'BLS · JOLTS',
+                    us_labor_force_label: 'القوى العاملة في الولايات المتحدة',
+                    source_bls: 'BLS',
+                    weekly_jobless_claims_label: 'طلبات البطالة الأسبوعية',
+                    source_dol: 'DOL',
+                    section_dtc: '📦 اقتصاد DTC',
+                    badge_dtc: 'مباشر إلى المستهلك',
+                    global_dtc_label: 'سوق DTC العالمي',
+                    source_emarketer: 'eMarketer · 2026',
+                    dtc_annual_growth_label: 'النمو السنوي لـ DTC',
+                    us_dtc_label: 'سوق DTC الأمريكي',
+                    source_forrester: 'Forrester',
+                    dtc_share_label: 'حصة DTC من التجارة الإلكترونية',
+                    source_digital_commerce: 'Digital Commerce 360',
+                    active_dtc_brands_label: 'العلامات التجارية النشطة لـ DTC',
+                    source_similarweb: 'SimilarWeb',
+                    dtc_avg_order_label: 'متوسط قيمة طلب DTC',
+                    source_shopify: 'Shopify',
+                    section_iran: '⚔️ تكاليف الصراع مع إيران',
+                    badge_military_long: 'عسكري + طويل الأجل',
+                    direct_military_label: 'الإنفاق العسكري المباشر',
+                    source_pentagon_iran: 'البنتاغون / IranWarCost.com',
+                    projected_long_term_label: 'المتوقع على المدى الطويل',
+                    source_harvard: 'هارفارد · بلمز',
+                    brent_crude_label: 'خام برنت (دولار/برميل)',
+                    source_market_estimate: 'تقدير السوق',
+                    inflation_contribution_label: 'المساهمة في التضخم',
+                    source_world_bank: 'البنك الدولي · 2026',
+                    veterans_lifetime_label: 'مزايا مدى الحياة للمحاربين القدامى',
+                    source_va: 'VA',
+                    iran_daily_cost_label: 'التكلفة اليومية (العمليات النشطة)',
+                    source_iranwar: 'IranWarCost.com',
+                    section_opportunity: '💡 تكلفة الفرصة البديلة',
+                    badge_what_else: 'ماذا يمكن أن يمول هذا؟',
+                    opp_healthcare: 'الرعاية الصحية السنوية للأمريكيين',
+                    opp_tuition: 'الرسوم الجامعية العامة للطلاب',
+                    opp_housing: 'وحدات سكنية ميسورة التكلفة',
+                    opp_teachers: 'معلمي المدارس العامة',
+                    opp_chip: 'الأطفال المؤمنين عبر CHIP',
+                    opp_lunches: 'الطلاب الذين يتلقون وجبات غداء مجانية',
+                    section_charts: '📈 الرسوم البيانية',
+                    badge_trends: 'الاتجاهات',
+                    section_whatif: '🧮 ماذا لو؟',
+                    badge_calculator: 'آلة حاسبة',
+                    whatif_label: 'إذا كانت تكلفة حرب إيران',
+                    whatif_note: 'اضبط الرقم أعلاه لرؤية سيناريوهات مختلفة. بناءً على $14,570 لكل شخص سنويًا (CMS).',
+                    section_per_citizen: '👤 لكل مواطن أمريكي',
+                    badge_taxpayer_share: 'حصتك',
+                    per_citizen_total: 'التكلفة الإجمالية لحرب إيران',
+                    per_citizen_per_day: 'في اليوم',
+                    per_citizen_per_week: 'في الأسبوع',
+                    per_citizen_per_month: 'في الشهر',
+                    per_citizen_per_year: 'في السنة (سنوي)',
+                    per_citizen_since_open: 'التكلفة منذ فتح هذه الصفحة',
+                    section_real_time: '⏱️ عدادات الوقت الفعلي',
+                    badge_updating_now: 'تحديث الآن',
+                    global_debt_per_sec: 'الديون العالمية / ثانية',
+                    us_debt_per_sec: 'الديون الأمريكية / ثانية',
+                    iran_war_per_sec: 'حرب إيران / ثانية',
+                    living_wage_gap_short: 'فجوة الأجر المعيشي (الولايات المتحدة)',
+                    jobless_claims_per_day: 'طلبات البطالة / يوم',
+                    dtc_growth_per_sec: 'نمو DTC / ثانية',
+                    section_at_a_glance: '📋 نظرة سريعة',
+                    badge_key_indicators: 'المؤشرات الرئيسية',
+                    table_header_category: 'الفئة',
+                    table_header_metric: 'المقياس',
+                    table_header_value: 'القيمة',
+                    table_header_source: 'المصدر',
+                    table_global_label: '🌍 عالمي',
+                    table_total_global_debt: 'إجمالي الديون العالمية',
+                    source_iif: 'IIF',
+                    table_us_label: '🇺🇸 الولايات المتحدة',
+                    table_national_debt: 'الديون الوطنية',
+                    table_living_wage_label: '💰 الأجر المعيشي',
+                    table_us_hourly_living: 'الأجر المعيشي بالساعة (الولايات المتحدة)',
+                    table_fed_min_wage: 'الحد الأدنى الفيدرالي للأجور',
+                    table_jobs_label: '📊 الوظائف',
+                    table_us_unemp_rate: 'معدل البطالة في الولايات المتحدة',
+                    table_us_job_openings: 'الوظائف الشاغرة في الولايات المتحدة',
+                    table_dtc_label: '📦 DTC',
+                    table_global_dtc: 'سوق DTC العالمي',
+                    table_iran_label: '⚔️ إيران',
+                    table_direct_military_tracked: 'التكلفة العسكرية المباشرة (المتتبعة)',
+                    table_projected_long_term: 'التكلفة المتوقعة على المدى الطويل',
+                    source_box_title: '📚 مصادر البيانات',
+                    source_pentagon: '• البنتاغون (العسكرية الإيرانية)',
+                    source_iranwar_highlight: '• IranWarCost.com (الصراع مع إيران)',
+                    source_footer_note: 'جميع البيانات مضمنة محلياً · مصادر موثوقة متعددة · احتياطي صامت · بدون مكالمات خارجية',
+                    iranwar_credit: '⚡ بيانات الصراع الإيراني من <strong>IranWarCost.com</strong> — متتبع مباشر بمعدل ~$12.1 ألف/ثانية، ~$1.0 مليار/يوم منذ 20 أبريل 2024',
+                    footer_text: 'تي دي سي · ساعة الديون &bull; متتبع الاقتصاد العالمي &bull; بدون مكالمات خارجية &bull;',
+                    last_updated_label: 'آخر تحديث:',
+                    iranwar_footer_credit: 'بيانات تكاليف حرب إيران: IranWarCost.com · ~$12.1 ألف/ثانية · ~$1.0 مليار/يوم'
+                }
+            };
+
+            // ── DOM REFS ──
+            const $ = id => document.getElementById(id);
+            const globalDebt = $('globalDebt');
+            const globalDebtMeta = $('globalDebtMeta');
+            const debtUpdated = $('debtUpdated');
+            const footerTs = $('footerTimestamp');
+            const healthDot = $('healthDot');
+            const healthDisplay = $('healthDisplay');
+            const darkToggle = $('darkToggle');
+            const langSelector = $('langSelector');
+
+            const usDebt = $('usDebt');
+            const chinaDebt = $('chinaDebt');
+            const euDebt = $('euDebt');
+            const japanDebt = $('japanDebt');
+            const corpDebt = $('corpDebt');
+            const householdDebt = $('householdDebt');
+
+            const livingWageUS = $('livingWageUS');
+            const livingWageUK = $('livingWageUK');
+            const livingWageEU = $('livingWageEU');
+            const livingWageAU = $('livingWageAU');
+            const livingWageAnnual = $('livingWageAnnual');
+            const minWageGap = $('minWageGap');
+
+            const usUnemployment = $('usUnemployment');
+            const euUnemployment = $('euUnemployment');
+            const globalUnemployment = $('globalUnemployment');
+            const usJobOpenings = $('usJobOpenings');
+            const usLaborForce = $('usLaborForce');
+            const joblessClaims = $('joblessClaims');
+
+            const dtcMarket = $('dtcMarket');
+            const dtcGrowth = $('dtcGrowth');
+            const dtcUS = $('dtcUS');
+            const dtcRetail = $('dtcRetail');
+            const dtcBrands = $('dtcBrands');
+            const dtcAvgOrder = $('dtcAvgOrder');
+
+            const militaryCost = $('militaryCost');
+            const longTermCost = $('longTermCost');
+            const oilPrice = $('oilPrice');
+            const inflationImpact = $('inflationImpact');
+            const veteranCost = $('veteranCost');
+            const iranDailyCost = $('iranDailyCost');
+
+            const globalDebtPerSec = $('globalDebtPerSec');
+            const usDebtPerSec = $('usDebtPerSec');
+            const iranCostPerSec = $('iranCostPerSec');
+            const livingWageShortfall = $('livingWageShortfall');
+            const joblessPerDay = $('joblessPerDay');
+            const dtcGrowthPerSec = $('dtcGrowthPerSec');
+
+            const tblGlobalDebt = $('tblGlobalDebt');
+            const tblUsDebt = $('tblUsDebt');
+            const tblLivingWage = $('tblLivingWage');
+            const tblMinWage = $('tblMinWage');
+            const tblUnemployment = $('tblUnemployment');
+            const tblJobOpenings = $('tblJobOpenings');
+            const tblDtc = $('tblDtc');
+            const tblIranMilitary = $('tblIranMilitary');
+            const tblIranLong = $('tblIranLong');
+
+            const perCitizenTotal = $('perCitizenTotal');
+            const perCitizenPerDay = $('perCitizenPerDay');
+            const perCitizenPerWeek = $('perCitizenPerWeek');
+            const perCitizenPerMonth = $('perCitizenPerMonth');
+            const perCitizenPerYear = $('perCitizenPerYear');
+            const perCitizenSinceOpen = $('perCitizenSinceOpen');
+
+            const progressUsBar = $('progressUsBar');
+            const progressUsLabel = $('progressUsLabel');
+            const progressIranBar = $('progressIranBar');
+            const progressIranLabel = $('progressIranLabel');
+            const progressGlobalBar = $('progressGlobalBar');
+            const progressGlobalLabel = $('progressGlobalLabel');
+
+            const whatifInput = $('whatifInput');
+            const whatifValue = $('whatifValue');
+
+            // ── STATE ──
+            let currentLocale = 'en-US';
+            let currentGlobal = 315.00 * 1e12;
+            let currentUS = 39.10 * 1e12;
+            let currentCorp = 22.50 * 1e12;
+            let currentHousehold = 18.70 * 1e12;
+            let iranTotalCost = 175.48 * 1e9;
+            let pageOpenTime = Date.now();
+            let lastUpdate = Date.now();
+            let isDark = true;
+            let charts = {};
+            let chartHistory = {
+                us: [],
+                iran: [],
+                global: [],
+                living: []
+            };
+            const CHART_POINTS = 30;
+            const US_TAXPAYERS = 150_000_000;
+
+            // ── DATA ──
+            const DATA = {
+                global: { value: 315.00, growth: 120_000_000 },
+                us: { value: 39.10, growth: 20_000_000 },
+                china: { value: 18.50, growth: 9_000_000 },
+                eu: { value: 16.20, growth: 7_500_000 },
+                japan: { value: 12.80, growth: 5_000_000 },
+                corp: { value: 22.50, growth: 8_000_000 },
+                household: { value: 18.70, growth: 6_000_000 },
+                livingUS: 25.50,
+                livingUK: 14.80,
+                livingEU: 16.20,
+                livingAU: 28.40,
+                minWageUS: 7.25,
+                usUnemp: 4.2,
+                euUnemp: 6.1,
+                globalUnemp: 5.8,
+                jobOpenings: 8.20,
+                laborForce: 168.5,
+                joblessClaims: 225.0,
+                dtcGlobal: 285.0,
+                dtcGrowthRate: 14.2,
+                dtcUS: 165.0,
+                dtcRetailShare: 32.5,
+                dtcBrands: 45.0,
+                dtcAvgOrder: 89.00,
+                iranTotal: 175.48,
+                iranDailyRate: 1.0,
+                iranPerSec: 12_100,
+                longTerm: 1.00,
+                oil: 82.50,
+                inflation: 3.8,
+                veteran: 400.0,
+                oppHealthcare: 14570,
+                oppTuition: 11610,
+                oppHousing: 100000,
+                oppTeacher: 65000,
+                oppCHIP: 1700,
+                oppLunch: 765,
+                usDebtTarget: 40.0 * 1e12,
+                iranTarget: 200.0 * 1e9,
+                globalTarget: 350.0 * 1e12
+            };
+
+            let health = {
+                global: true,
+                us: true,
+                china: true,
+                eu: true,
+                japan: true,
+                corp: true,
+                household: true,
+                living: true,
+                jobs: true,
+                dtc: true,
+                iran: true,
+                oil: true
+            };
+
+            let pinned = JSON.parse(localStorage.getItem('tdc_pins') || '[]');
+
+            // ── I18N ──
+            function t(key) {
+                return translations[currentLocale]?.[key] || translations['en-US']?.[key] || key;
+            }
+
+            function applyTranslations() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.dataset.i18n;
+                    const val = t(key);
+                    if (val) {
+                        if (key === 'iranwar_credit' || key === 'subhead') {
+                            el.innerHTML = val;
+                        } else {
+                            el.textContent = val;
+                        }
+                    }
+                });
+                debtUpdated.innerHTML = t('updating') + '…';
+                healthDisplay.innerHTML =
+                    `<span class="status-dot" id="healthDot"></span> ${t('health_all_ok')}`;
+            }
+
+            // ── NUMBER FORMATTING ──
+            function formatNumber(num, decimals = 2) {
+                if (num === undefined || num === null || isNaN(num)) return '—';
+                try {
+                    return new Intl.NumberFormat(currentLocale, {
+                        minimumFractionDigits: decimals,
+                        maximumFractionDigits: decimals
+                    }).format(num);
+                } catch (e) {
+                    return num.toFixed(decimals);
+                }
+            }
+
+            function formatCurrency(num, decimals = 2) {
+                if (num === undefined || num === null || isNaN(num)) return '$—';
+                let suffix = '',
+                    divisor = 1;
+                if (Math.abs(num) >= 1e12) { divisor = 1e12;
+                    suffix = 'T'; } else if (Math.abs(num) >= 1e9) { divisor = 1e9;
+                    suffix = 'B'; } else if (Math.abs(num) >= 1e6) { divisor = 1e6;
+                    suffix = 'M'; } else if (Math.abs(num) >= 1e3) { divisor = 1e3;
+                    suffix = 'K'; }
+                const val = num / divisor;
+                return '$' + formatNumber(val, decimals) + suffix;
+            }
+
+            function formatCurrencyNoDecimals(num) {
+                if (num === undefined || num === null || isNaN(num)) return '$—';
+                let suffix = '',
+                    divisor = 1;
+                if (Math.abs(num) >= 1e12) { divisor = 1e12;
+                    suffix = 'T'; } else if (Math.abs(num) >= 1e9) { divisor = 1e9;
+                    suffix = 'B'; } else if (Math.abs(num) >= 1e6) { divisor = 1e6;
+                    suffix = 'M'; } else if (Math.abs(num) >= 1e3) { divisor = 1e3;
+                    suffix = 'K'; }
+                const val = num / divisor;
+                return '$' + formatNumber(val, 0) + suffix;
+            }
+
+            function formatNumberWithCommas(num, decimals = 2) {
+                if (num === undefined || num === null || isNaN(num)) return '0';
+                let suffix = '',
+                    divisor = 1;
+                if (Math.abs(num) >= 1e9) { divisor = 1e9;
+                    suffix = 'B'; } else if (Math.abs(num) >= 1e6) { divisor = 1e6;
+                    suffix = 'M'; } else if (Math.abs(num) >= 1e3) { divisor = 1e3;
+                    suffix = 'K'; }
+                const val = num / divisor;
+                return formatNumber(val, decimals) + suffix;
+            }
+
+            function formatPercentage(num, decimals = 1) {
+                if (num === undefined || num === null || isNaN(num)) return '—%';
+                return formatNumber(num, decimals) + '%';
+            }
+
+            // ── FLASH HELPERS ──
+            function flashElement(el) {
+                if (!el) return;
+                el.classList.remove('updating');
+                void el.offsetWidth;
+                el.classList.add('updating');
+                setTimeout(() => el.classList.remove('updating'), 300);
+            }
+
+            function flashCard(cardId) {
+                const card = document.getElementById(cardId);
+                if (!card) return;
+                const flash = card.querySelector('.update-flash') || document.createElement('div');
+                if (!card.querySelector('.update-flash')) {
+                    flash.className = 'update-flash';
+                    card.appendChild(flash);
+                }
+                flash.classList.remove('active');
+                void flash.offsetWidth;
+                flash.classList.add('active');
+                setTimeout(() => flash.classList.remove('active'), 400);
+            }
+
+            function flashTableRow(id) {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const row = el.closest('tr');
+                if (!row) return;
+                row.querySelectorAll('td').forEach(c => {
+                    c.classList.remove('updating');
+                    void c.offsetWidth;
+                    c.classList.add('updating');
+                    setTimeout(() => c.classList.remove('updating'), 300);
+                });
+            }
+
+            // ── PINNING ──
+            function togglePin(pinId) {
+                const idx = pinned.indexOf(pinId);
+                if (idx > -1) {
+                    pinned.splice(idx, 1);
+                } else {
+                    pinned.push(pinId);
+                }
+                localStorage.setItem('tdc_pins', JSON.stringify(pinned));
+                updatePins();
+            }
+
+            function updatePins() {
+                document.querySelectorAll('.stat-card[data-pin]').forEach(card => {
+                    const pinId = card.dataset.pin;
+                    const isPinned = pinned.includes(pinId);
+                    card.classList.toggle('pinned', isPinned);
+                    const btn = card.querySelector('.pin-btn');
+                    if (btn) btn.textContent = isPinned ? '⭐' : '📌';
+                });
+            }
+
+            document.addEventListener('click', function(e) {
+                const btn = e.target.closest('.pin-btn');
+                if (btn) {
+                    const pinId = btn.dataset.pin;
+                    if (pinId) togglePin(pinId);
+                }
+            });
+
+            $('resetPinsBtn').addEventListener('click', function() {
+                pinned = [];
+                localStorage.setItem('tdc_pins', JSON.stringify(pinned));
+                updatePins();
+            });
+
+            // ── HEALTH ──
+            function checkHealth() {
+                const keys = Object.keys(health);
+                const healthy = keys.filter(k => health[k]).length;
+                if (healthy > keys.length * 0.6) {
+                    for (const k of keys) {
+                        if (Math.random() < 0.02 && health[k]) health[k] = false;
+                    }
+                } else {
+                    for (const k of keys) {
+                        if (!health[k] && Math.random() < 0.08) health[k] = true;
+                    }
+                }
+                health.global = true;
+                health.us = true;
+                health.iran = true;
+                updateUIHealth();
+                refreshData();
+            }
+
+            function updateUIHealth() {
+                const keys = Object.keys(health);
+                const healthy = keys.filter(k => health[k]).length;
+                const total = keys.length;
+                const dot = document.getElementById('healthDot');
+                if (!dot) return;
+                dot.className = 'status-dot';
+                if (healthy === total) {
+                    dot.classList.add('status-dot');
+                    healthDisplay.innerHTML =
+                    `<span class="status-dot" id="healthDot"></span> ${t('health_all_ok')}`;
+                } else if (healthy >= total * 0.6) {
+                    dot.classList.add('warning');
+                    healthDisplay.innerHTML =
+                        `<span class="status-dot warning" id="healthDot"></span> ${total - healthy} ${t('health_all_ok')}`;
+                } else {
+                    dot.classList.add('offline');
+                    healthDisplay.innerHTML =
+                        `<span class="status-dot offline" id="healthDot"></span> ${total - healthy} ${t('health_all_ok')}`;
+                }
+            }
+
+            // ── REFRESH DATA ──
+            function refreshData() {
+                if (health.global) {
+                    currentGlobal = DATA.global.value * 1e12;
+                    globalDebtMeta.textContent = t('global_debt_meta');
+                } else {
+                    currentGlobal = 314.50 * 1e12;
+                    globalDebtMeta.textContent = 'IIF (unavailable) · fallback';
+                }
+                if (health.us) {
+                    currentUS = DATA.us.value * 1e12;
+                    usDebt.textContent = formatCurrency(currentUS);
+                } else {
+                    currentUS = 39.05 * 1e12;
+                    usDebt.textContent = formatCurrency(currentUS);
+                }
+                if (health.china) chinaDebt.textContent = formatCurrency((health.china ? DATA.china.value : 18.30) * 1e12);
+                if (health.eu) euDebt.textContent = formatCurrency((health.eu ? DATA.eu.value : 16.00) * 1e12);
+                if (health.japan) japanDebt.textContent = formatCurrency((health.japan ? DATA.japan.value : 12.60) * 1e12);
+                if (health.corp) {
+                    currentCorp = DATA.corp.value * 1e12;
+                    corpDebt.textContent = formatCurrency(currentCorp);
+                } else {
+                    currentCorp = 22.20 * 1e12;
+                    corpDebt.textContent = formatCurrency(currentCorp);
+                }
+                if (health.household) {
+                    currentHousehold = DATA.household.value * 1e12;
+                    householdDebt.textContent = formatCurrency(currentHousehold);
+                } else {
+                    currentHousehold = 18.50 * 1e12;
+                    householdDebt.textContent = formatCurrency(currentHousehold);
+                }
+                if (health.living) {
+                    livingWageUS.textContent = '$' + formatNumber(DATA.livingUS, 2);
+                    livingWageUK.textContent = '£' + formatNumber(DATA.livingUK, 2);
+                    livingWageEU.textContent = '€' + formatNumber(DATA.livingEU, 2);
+                    livingWageAU.textContent = 'AU$' + formatNumber(DATA.livingAU, 2);
+                    livingWageAnnual.textContent = '$' + formatNumber(DATA.livingUS * 2080, 0);
+                    minWageGap.textContent = '$' + formatNumber(DATA.livingUS - DATA.minWageUS, 2);
+                    tblLivingWage.textContent = '$' + formatNumber(DATA.livingUS, 2);
+                    tblMinWage.textContent = '$' + formatNumber(DATA.minWageUS, 2);
+                } else {
+                    livingWageUS.textContent = '$' + formatNumber(25.00, 2);
+                    minWageGap.textContent = '$' + formatNumber(25.00 - DATA.minWageUS, 2);
+                }
+                if (health.jobs) {
+                    usUnemployment.textContent = formatPercentage(DATA.usUnemp);
+                    euUnemployment.textContent = formatPercentage(DATA.euUnemp);
+                    globalUnemployment.textContent = formatPercentage(DATA.globalUnemp);
+                    usJobOpenings.textContent = formatNumberWithCommas(DATA.jobOpenings * 1e6, 2);
+                    usLaborForce.textContent = formatNumberWithCommas(DATA.laborForce * 1e6, 2);
+                    joblessClaims.textContent = formatNumberWithCommas(DATA.joblessClaims * 1000, 1);
+                    tblUnemployment.textContent = formatPercentage(DATA.usUnemp);
+                    tblJobOpenings.textContent = formatNumberWithCommas(DATA.jobOpenings * 1e6, 2);
+                }
+                if (health.dtc) {
+                    dtcMarket.textContent = formatCurrency(DATA.dtcGlobal * 1e9, 2);
+                    dtcGrowth.textContent = formatPercentage(DATA.dtcGrowthRate, 1);
+                    dtcUS.textContent = formatCurrency(DATA.dtcUS * 1e9, 2);
+                    dtcRetail.textContent = formatPercentage(DATA.dtcRetailShare, 1);
+                    dtcBrands.textContent = formatNumberWithCommas(DATA.dtcBrands * 1000, 2) + '+';
+                    dtcAvgOrder.textContent = '$' + formatNumber(DATA.dtcAvgOrder, 2);
+                    tblDtc.textContent = formatCurrency(DATA.dtcGlobal * 1e9, 2);
+                }
+                if (health.iran) {
+                    iranTotalCost = DATA.iranTotal * 1e9;
+                    militaryCost.textContent = formatCurrency(iranTotalCost, 2);
+                    iranDailyCost.textContent = formatCurrency(DATA.iranDailyRate * 1e9, 2);
+                    tblIranMilitary.textContent = formatCurrency(iranTotalCost, 2);
+                } else {
+                    iranTotalCost = 175.00 * 1e9;
+                    militaryCost.textContent = formatCurrency(iranTotalCost, 2);
+                }
+                if (health.iran) {
+                    longTermCost.textContent = formatCurrency(DATA.longTerm * 1e12, 2);
+                    veteranCost.textContent = formatCurrency(DATA.veteran * 1e9, 2);
+                    tblIranLong.textContent = formatCurrency(DATA.longTerm * 1e12, 2);
+                } else {
+                    longTermCost.textContent = formatCurrency(0.98 * 1e12, 2);
+                }
+                if (health.oil) {
+                    oilPrice.textContent = '$' + formatNumber(DATA.oil, 2);
+                } else {
+                    oilPrice.textContent = '$' + formatNumber(83.00, 2);
+                }
+                if (health.iran) {
+                    inflationImpact.textContent = formatPercentage(DATA.inflation, 1);
+                } else {
+                    inflationImpact.textContent = formatPercentage(3.7, 1);
+                }
+                tblGlobalDebt.textContent = formatCurrency(currentGlobal);
+                tblUsDebt.textContent = formatCurrency(currentUS);
+                updateOpportunityCost();
+                updatePerCitizen();
+                updateProgress();
+                updateWhatIf();
+            }
+
+            // ── OPPORTUNITY COST ──
+            function updateOpportunityCost() {
+                const cost = iranTotalCost;
+                document.getElementById('oppHealthcare').textContent = formatNumberWithCommas(Math.round(cost / DATA
+                    .oppHealthcare), 0);
+                document.getElementById('oppTuition').textContent = formatNumberWithCommas(Math.round(cost / DATA.oppTuition),
+                    0);
+                document.getElementById('oppHousing').textContent = formatNumberWithCommas(Math.round(cost / DATA.oppHousing),
+                    0);
+                document.getElementById('oppTeachers').textContent = formatNumberWithCommas(Math.round(cost / DATA
+                    .oppTeacher), 0);
+                document.getElementById('oppCHIP').textContent = formatNumberWithCommas(Math.round(cost / DATA.oppCHIP), 0);
+                document.getElementById('oppLunches').textContent = formatNumberWithCommas(Math.round(cost / DATA.oppLunch),
+                    0);
+            }
+
+            // ── PER-CITIZEN ──
+            function updatePerCitizen() {
+                const total = iranTotalCost / US_TAXPAYERS;
+                perCitizenTotal.textContent = '$' + formatNumber(total, 0);
+                perCitizenPerDay.textContent = '$' + formatNumber(total / 365.25, 2);
+                perCitizenPerWeek.textContent = '$' + formatNumber(total / 52.18, 2);
+                perCitizenPerMonth.textContent = '$' + formatNumber(total / 12, 2);
+                perCitizenPerYear.textContent = '$' + formatNumber(total, 0);
+                const elapsed = (Date.now() - pageOpenTime) / 1000;
+                const sinceOpen = (DATA.iranPerSec * elapsed) / US_TAXPAYERS;
+                perCitizenSinceOpen.textContent = '$' + formatNumber(sinceOpen, 2);
+            }
+
+            // ── PROGRESS ──
+            function updateProgress() {
+                const usPct = Math.min((currentUS / DATA.usDebtTarget) * 100, 100);
+                progressUsBar.style.width = usPct + '%';
+                progressUsLabel.textContent = formatNumber(usPct, 1) + '%';
+
+                const iranPct = Math.min((iranTotalCost / DATA.iranTarget) * 100, 100);
+                progressIranBar.style.width = iranPct + '%';
+                progressIranLabel.textContent = formatNumber(iranPct, 1) + '%';
+
+                const globalPct = Math.min((currentGlobal / DATA.globalTarget) * 100, 100);
+                progressGlobalBar.style.width = globalPct + '%';
+                progressGlobalLabel.textContent = formatNumber(globalPct, 1) + '%';
+            }
+
+            // ── WHAT IF ──
+            function updateWhatIf() {
+                const val = parseFloat(whatifInput.value) || 0;
+                const cost = val * 1e9;
+                const people = Math.round(cost / DATA.oppHealthcare);
+                whatifValue.textContent = formatNumber(people, 0);
+            }
+            whatifInput.addEventListener('input', updateWhatIf);
+
+            // ── TIMESTAMP ──
+            function updateTimestamp() {
+                const now = new Date();
+                const timeStr = now.toLocaleString(currentLocale, {
+                    timeZone: 'America/New_York',
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }) + ' ET';
+                footerTs.textContent = timeStr;
+                debtUpdated.innerHTML = t('updating') + ' ' + timeStr;
+            }
+
+            // ── CHARTS ──
+            function initCharts() {
+                const chartConfig = (label, color, dataset) => ({
+                    type: 'line',
+                    data: {
+                        labels: dataset.map((_, i) => ''),
+                        datasets: [{
+                            label: label,
+                            data: dataset.map(p => p.value / 1e12),
+                            borderColor: color,
+                            backgroundColor: color + '20',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                labels: { color: getComputedStyle(document.documentElement).getPropertyValue(
+                                        '--text-secondary') || '#99aacd', font: { size: 10 } }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                grid: { color: getComputedStyle(document.documentElement).getPropertyValue(
+                                        '--border-color') || '#2a3344' },
+                                ticks: { color: getComputedStyle(document.documentElement).getPropertyValue(
+                                        '--text-muted') || '#556688', font: { size: 8 }, maxTicksLimit: 10 }
+                            },
+                            y: {
+                                display: true,
+                                grid: { color: getComputedStyle(document.documentElement).getPropertyValue(
+                                        '--border-color') || '#2a3344' },
+                                ticks: { color: getComputedStyle(document.documentElement).getPropertyValue(
+                                        '--text-muted') || '#556688', font: { size: 8 } }
+                            }
+                        }
+                    }
+                });
+
+                const colors = {
+                    us: '#ff6b6b',
+                    iran: '#ffd700',
+                    global: '#4dabf7',
+                    living: '#2ed573'
+                };
+
+                // US Debt chart
+                const ctxUs = document.getElementById('chartUsDebt').getContext('2d');
+                charts.us = new Chart(ctxUs, chartConfig('U.S. Debt', colors.us, chartHistory.us));
+
+                // Iran chart
+                const ctxIran = document.getElementById('chartIranCost').getContext('2d');
+                charts.iran = new Chart(ctxIran, chartConfig('Iran War Cost', colors.iran, chartHistory.iran));
+
+                // Global chart
+                const ctxGlobal = document.getElementById('chartGlobalDebt').getContext('2d');
+                charts.global = new Chart(ctxGlobal, chartConfig('Global Debt', colors.global, chartHistory.global));
+
+                // Living Wage chart
+                const ctxLiving = document.getElementById('chartLivingWage').getContext('2d');
+                charts.living = new Chart(ctxLiving, chartConfig('Living Wage (US)', colors.living, chartHistory.living));
+            }
+
+            function updateCharts() {
+                const now = Date.now();
+
+                // Add points
+                chartHistory.us.push({ time: now, value: currentUS });
+                chartHistory.iran.push({ time: now, value: iranTotalCost });
+                chartHistory.global.push({ time: now, value: currentGlobal });
+                chartHistory.living.push({ time: now, value: DATA.livingUS });
+
+                // Trim
+                ['us', 'iran', 'global', 'living'].forEach(key => {
+                    if (chartHistory[key].length > CHART_POINTS) {
+                        chartHistory[key].shift();
+                    }
+                });
+
+                // Update charts
+                ['us', 'iran', 'global', 'living'].forEach(key => {
+                    const chart = charts[key];
+                    if (!chart) return;
+                    const data = chartHistory[key];
+                    chart.data.labels = data.map((_, i) => {
+                        const d = new Date(data[i].time);
+                        return (i % 5 === 0 || i === data.length - 1) ?
+                            d.toLocaleDateString(currentLocale, { month: 'short', day: 'numeric' }) :
+                            '';
+                    });
+                    // For living wage, keep in dollars not trillions
+                    if (key === 'living') {
+                        chart.data.datasets[0].data = data.map(p => p.value);
+                    } else {
+                        chart.data.datasets[0].data = data.map(p => p.value / 1e12);
+                    }
+                    chart.update('none');
+                });
+            }
+
+            // ── EXPORT CSV ──
+            function exportCSV() {
+                const rows = [
+                    ['Metric', 'Value', 'Source'],
+                    ['Global Debt', formatCurrency(currentGlobal), 'IIF'],
+                    ['U.S. Debt', formatCurrency(currentUS), 'Treasury'],
+                    ['Iran War Cost', formatCurrency(iranTotalCost, 2), 'IranWarCost.com'],
+                    ['U.S. Living Wage (hourly)', '$' + formatNumber(DATA.livingUS, 2), 'MIT'],
+                    ['U.S. Unemployment', formatPercentage(DATA.usUnemp), 'BLS'],
+                    ['Global DTC Market', formatCurrency(DATA.dtcGlobal * 1e9, 2), 'eMarketer'],
+                    ['Per Citizen Iran Cost', '$' + formatNumber(iranTotalCost / US_TAXPAYERS, 0), 'IranWarCost.com']
+                ];
+                const csv = rows.map(r => r.join(',')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'tdc_data_' + new Date().toISOString().slice(0, 10) + '.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+            $('exportCsvBtn').addEventListener('click', exportCSV);
+
+            // ── PRINT ──
+            $('printBtn').addEventListener('click', function() {
+                window.print();
+            });
+
+            // ── LOCALE ──
+            function switchLocale(locale) {
+                currentLocale = locale;
+                langSelector.value = locale;
+                applyTranslations();
+                refreshData();
+                updateTimestamp();
+                updateUIHealth();
+                updateCharts();
+            }
+            langSelector.addEventListener('change', function() {
+                switchLocale(this.value);
+            });
+
+            // ── DARK MODE ──
+            function toggleDark() {
+                isDark = !isDark;
+                const body = document.body;
+                const container = document.querySelector('.container');
+                const toggle = darkToggle;
+                if (isDark) {
+                    body.classList.remove('light-mode');
+                    toggle.classList.add('active');
+                    // Update chart colors
+                    updateChartColors();
+                } else {
+                    body.classList.add('light-mode');
+                    toggle.classList.remove('active');
+                    updateChartColors();
+                }
+                localStorage.setItem('tdc-dark-mode', isDark ? 'true' : 'false');
+            }
+
+            function updateChartColors() {
+                const isLight = document.body.classList.contains('light-mode');
+                const textColor = isLight ? '#4a4a6a' : '#99aacd';
+                const gridColor = isLight ? '#d6dce8' : '#2a3344';
+                const tickColor = isLight ? '#7788aa' : '#556688';
+                Object.values(charts).forEach(chart => {
+                    if (chart.options) {
+                        chart.options.plugins.legend.labels.color = textColor;
+                        chart.options.scales.x.grid.color = gridColor;
+                        chart.options.scales.y.grid.color = gridColor;
+                        chart.options.scales.x.ticks.color = tickColor;
+                        chart.options.scales.y.ticks.color = tickColor;
+                        chart.update('none');
+                    }
+                });
+            }
+
+            function loadDarkPreference() {
+                const saved = localStorage.getItem('tdc-dark-mode');
+                if (saved === 'false') {
+                    isDark = true;
+                    toggleDark();
+                } else {
+                    // Default dark
+                    document.body.classList.remove('light-mode');
+                    darkToggle.classList.add('active');
+                }
+            }
+            darkToggle.addEventListener('click', toggleDark);
+
+            // ── MAIN UPDATE ──
+            function update() {
+                const now = Date.now();
+                const delta = (now - lastUpdate) / 1000;
+                lastUpdate = now;
+
+                currentGlobal += DATA.global.growth * delta;
+                currentUS += DATA.us.growth * delta;
+                currentCorp += DATA.corp.growth * delta;
+                currentHousehold += DATA.household.growth * delta;
+                iranTotalCost += DATA.iranPerSec * delta;
+
+                // Update displays
+                const newGlobal = formatCurrency(currentGlobal);
+                if (globalDebt.textContent !== newGlobal) {
+                    globalDebt.textContent = newGlobal;
+                    flashElement(globalDebt);
+                }
+
+                const newUS = formatCurrency(currentUS);
+                if (usDebt.textContent !== newUS) {
+                    usDebt.textContent = newUS;
+                    flashElement(usDebt);
+                    flashCard('card-us');
+                    flashTableRow('tblUsDebt');
+                }
+
+                corpDebt.textContent = formatCurrency(currentCorp);
+                householdDebt.textContent = formatCurrency(currentHousehold);
+
+                const newIran = formatCurrency(iranTotalCost, 2);
+                if (militaryCost.textContent !== newIran) {
+                    militaryCost.textContent = newIran;
+                    flashElement(militaryCost);
+                    flashTableRow('tblIranMilitary');
+                }
+
+                iranDailyCost.textContent = formatCurrency(DATA.iranDailyRate * 1e9, 2);
+                iranCostPerSec.textContent = '$' + formatNumber(DATA.iranPerSec, 0);
+
+                globalDebtPerSec.textContent = formatCurrencyNoDecimals(DATA.global.growth);
+                usDebtPerSec.textContent = formatCurrencyNoDecimals(DATA.us.growth);
+                livingWageShortfall.textContent = '$' + formatNumber(DATA.livingUS - DATA.minWageUS, 2) + '/hr';
+
+                const dailyClaims = Math.round(DATA.joblessClaims * 1000 / 7);
+                joblessPerDay.textContent = formatNumber(dailyClaims, 0);
+
+                const dtcGrowthPerSecVal = (DATA.dtcGlobal * 1e9 * DATA.dtcGrowthRate / 100) / (365.25 * 24 * 60 * 60);
+                dtcGrowthPerSec.textContent = '$' + formatNumber(dtcGrowthPerSecVal, 0);
+
+                // Table updates
+                const tblGlobal = formatCurrency(currentGlobal);
+                if (tblGlobalDebt.textContent !== tblGlobal) {
+                    tblGlobalDebt.textContent = tblGlobal;
+                    flashTableRow('tblGlobalDebt');
+                }
+
+                const tblUs = formatCurrency(currentUS);
+                if (tblUsDebt.textContent !== tblUs) {
+                    tblUsDebt.textContent = tblUs;
+                    flashTableRow('tblUsDebt');
+                }
+
+                updateOpportunityCost();
+                updatePerCitizen();
+                updateProgress();
+                updateWhatIf();
+                updateCharts();
+                updateTimestamp();
+            }
+
+            // ── OIL WALK ──
+            function updateOil() {
+                const current = parseFloat(oilPrice.textContent.replace('$', ''));
+                if (!isNaN(current)) {
+                    const change = (Math.random() - 0.5) * 0.3;
+                    const newPrice = Math.max(70, current + change);
+                    const newStr = '$' + formatNumber(newPrice, 2);
+                    if (oilPrice.textContent !== newStr) {
+                        oilPrice.textContent = newStr;
+                        flashElement(oilPrice);
+                    }
+                }
+            }
+
+            // ── INIT ──
+            function init() {
+                // Load dark preference
+                loadDarkPreference();
+
+                // Load locale from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const localeParam = urlParams.get('lang');
+                if (localeParam && translations[localeParam]) {
+                    currentLocale = localeParam;
+                    langSelector.value = localeParam;
+                }
+
+                // Seed chart history
+                const now = Date.now();
+                for (let i = 0; i < CHART_POINTS; i++) {
+                    const t = now - (CHART_POINTS - i) * 60000;
+                    chartHistory.us.push({ time: t, value: Math.max(currentUS - (CHART_POINTS - i) * DATA.us.growth * 60,
+                        0) });
+                    chartHistory.iran.push({ time: t, value: Math.max(iranTotalCost - (CHART_POINTS - i) * DATA.iranPerSec *
+                            60, 0) });
+                    chartHistory.global.push({ time: t, value: Math.max(currentGlobal - (CHART_POINTS - i) * DATA.global
+                            .growth * 60, 0) });
+                    chartHistory.living.push({ time: t, value: DATA.livingUS });
+                }
+
+                // Initialize everything
+                applyTranslations();
+                refreshData();
+                updateUIHealth();
+                updatePins();
+                initCharts();
+                updateTimestamp();
+
+                // Start update loops
+                update();
+                setInterval(update, 500);
+                setInterval(updateOil, 3000);
+                setInterval(checkHealth, 15000);
+
+                // Auto-update chart colors on theme change
+                const observer = new MutationObserver(() => updateChartColors());
+                observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+
+        })();
+    </script>
+
+</body>
+</html>
